@@ -1,6 +1,6 @@
 package interfaces
 
-import "github.com/USA-RedDragon/go-gba/memory"
+import "github.com/USA-RedDragon/go-gba/internal/emulator/memory"
 
 type CPU interface {
 	ReadRegister(reg uint8) uint32

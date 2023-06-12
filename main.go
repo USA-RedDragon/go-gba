@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/USA-RedDragon/go-gba/cpu"
+	"github.com/USA-RedDragon/go-gba/internal/emulator/cpu"
 )
 
 func main() {

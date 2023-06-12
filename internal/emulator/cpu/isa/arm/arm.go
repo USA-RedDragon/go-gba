@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math/bits"
 
-	"github.com/USA-RedDragon/go-gba/cpu/isa"
-	"github.com/USA-RedDragon/go-gba/interfaces"
+	"github.com/USA-RedDragon/go-gba/internal/emulator/cpu/isa"
+	"github.com/USA-RedDragon/go-gba/internal/emulator/interfaces"
 )
 
 // https://iitd-plos.github.io/col718/ref/arm-instructionset.pdf, Figure 4-1

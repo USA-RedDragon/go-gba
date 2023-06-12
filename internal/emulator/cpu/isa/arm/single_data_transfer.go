@@ -3,7 +3,7 @@ package arm
 import (
 	"fmt"
 
-	"github.com/USA-RedDragon/go-gba/interfaces"
+	"github.com/USA-RedDragon/go-gba/internal/emulator/interfaces"
 )
 
 type LDR struct {

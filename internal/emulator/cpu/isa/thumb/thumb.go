@@ -3,7 +3,7 @@ package thumb
 import (
 	"fmt"
 
-	"github.com/USA-RedDragon/go-gba/cpu/isa"
+	"github.com/USA-RedDragon/go-gba/internal/emulator/cpu/isa"
 )
 
 // http://bear.ces.cwru.edu/eecs_382/ARM7-TDMI-manual-pt3.pdf, Figure 5-1

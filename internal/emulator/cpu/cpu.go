@@ -5,9 +5,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/USA-RedDragon/go-gba/cpu/isa/arm"
-	"github.com/USA-RedDragon/go-gba/cpu/isa/thumb"
-	"github.com/USA-RedDragon/go-gba/memory"
+	"github.com/USA-RedDragon/go-gba/internal/emulator/cpu/isa/arm"
+	"github.com/USA-RedDragon/go-gba/internal/emulator/cpu/isa/thumb"
+	"github.com/USA-RedDragon/go-gba/internal/emulator/memory"
 )
 
 const (
