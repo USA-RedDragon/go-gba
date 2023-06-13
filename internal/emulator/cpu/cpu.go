@@ -131,12 +131,10 @@ func (c *ARM7TDMI) Reset() {
 	// IRQs disabled, FIQs disabled, ARM mode, system mode
 	c.r[CPSR_REG] = 0x1F
 
-	c.r[PC_REG] = 0x00000000
+	c.r[PC_REG] = 0x00000004
 
 	c.prefetchARMBuffer[0] = uint32(c.biosROM[0]) | uint32(c.biosROM[1])<<8 | uint32(c.biosROM[2])<<16 | uint32(c.biosROM[3])<<24
-	c.r[PC_REG] += 4
 	c.prefetchARMBuffer[1] = uint32(c.biosROM[4]) | uint32(c.biosROM[5])<<8 | uint32(c.biosROM[6])<<16 | uint32(c.biosROM[7])<<24
-	c.r[PC_REG] += 4
 
 	if c.config.Debug {
 		fmt.Printf("Resetting CPU\n")
@@ -443,8 +441,6 @@ func (c *ARM7TDMI) WriteCPSR(value uint32) {
 
 func (c *ARM7TDMI) stepARM() {
 	instruction := c.prefetchARMBuffer[0]
-	c.prefetchARMBuffer[0] = c.prefetchARMBuffer[1]
-
 	if c.config.TraceRegisters {
 		fmt.Printf("\n\nPC:  0x%08X\t\tInstruction 0x%08X\n", c.ReadPC(), instruction)
 		fmt.Printf("R0:  0x%08X\t\t R1: 0x%08X\t\tR3:   0x%08X\n", c.r[0], c.r[1], c.r[3])
@@ -456,7 +452,15 @@ func (c *ARM7TDMI) stepARM() {
 			fmt.Printf("SPSR: 0x%08X\n", c.ReadSPSR())
 		}
 	}
+	c.prefetchARMBuffer[0] = c.prefetchARMBuffer[1]
+	c.r[PC_REG] += 4
+	var err error
+	c.prefetchARMBuffer[1], err = c.virtualMemory.Read32(c.r[PC_REG])
+	if err != nil {
+		panic(fmt.Sprintf("Error reading memory at 0x%08X: %v", c.r[PC_REG], err))
+	}
 
+	// DECODE
 	var condition uint32 = instruction >> 28
 	conditionFailed := false
 	// c.r[CSPR_REG] has condition flags N Z C V at bits 31-28
@@ -552,6 +556,7 @@ func (c *ARM7TDMI) stepARM() {
 		break
 	}
 
+	// EXECUTE
 	if !conditionFailed {
 		oldPC := c.r[PC_REG]
 
@@ -569,31 +574,30 @@ func (c *ARM7TDMI) stepARM() {
 			if c.config.Debug {
 				fmt.Printf("Branching from 0x%08X to 0x%08X, flushing pipeline\n", oldPC, c.r[PC_REG])
 			}
-			var err error
 			c.prefetchARMBuffer[0], err = c.virtualMemory.Read32(c.r[PC_REG])
 			if err != nil {
 				panic(fmt.Sprintf("Failed to read instruction at 0x%08X: %v", c.r[PC_REG], err))
 			}
 			c.r[PC_REG] += 4
-		}
-	}
-
-	if !c.GetThumbMode() {
-		var err error
-		c.prefetchARMBuffer[1], err = c.virtualMemory.Read32(c.r[PC_REG])
-		if err != nil {
-			panic(fmt.Sprintf("Failed to read instruction at 0x%08X: %v", c.r[PC_REG], err))
-		}
-		c.r[PC_REG] += 4
-		if c.config.Debug {
-			fmt.Printf("Prefetch[0]: 0x%08X\t\tPrefetch[1]: 0x%08X\n", c.prefetchARMBuffer[0], c.prefetchARMBuffer[1])
+			c.prefetchARMBuffer[1], err = c.virtualMemory.Read32(c.r[PC_REG])
+			if err != nil {
+				panic(fmt.Sprintf("Failed to read instruction at 0x%08X: %v", c.r[PC_REG], err))
+			}
 		}
 	}
 }
 
 func (c *ARM7TDMI) stepThumb() {
+	// FETCH
 	instruction := c.prefetchTHUMBBuffer[0]
 	c.prefetchTHUMBBuffer[0] = c.prefetchTHUMBBuffer[1]
+
+	c.r[PC_REG] += 2
+	var err error
+	c.prefetchTHUMBBuffer[1], err = c.virtualMemory.Read16(c.r[PC_REG])
+	if err != nil {
+		panic(fmt.Sprintf("Error reading memory at 0x%08X: %v", c.r[PC_REG], err))
+	}
 
 	if c.config.TraceRegisters {
 		fmt.Printf("\n\nPC:  0x%08X\t\tInstruction 0x%04X\n", c.ReadPC(), instruction)
@@ -608,10 +612,12 @@ func (c *ARM7TDMI) stepThumb() {
 		fmt.Printf("Prefetch[0]: 0x%04X\t\tPrefetch[1]: 0x%04X\n", c.prefetchTHUMBBuffer[0], c.prefetchTHUMBBuffer[1])
 	}
 
-	oldPC := c.r[PC_REG]
-
+	// DECODE
 	fmt.Printf("Executing instruction 0x%04X at 0x%08X\n", instruction, c.r[PC_REG])
 	instr := thumb.DecodeInstruction(instruction)
+
+	// EXECUTE
+	oldPC := c.r[PC_REG]
 	if instr != nil {
 		instr.Execute(c)
 	} else {
@@ -625,23 +631,14 @@ func (c *ARM7TDMI) stepThumb() {
 		if c.config.Debug {
 			fmt.Printf("Branching from 0x%08X to 0x%08X, flushing pipeline\n", oldPC, c.r[PC_REG])
 		}
-		var err error
 		c.prefetchTHUMBBuffer[0], err = c.virtualMemory.Read16(c.r[PC_REG])
 		if err != nil {
 			panic(fmt.Sprintf("Failed to read instruction at 0x%08X: %v", c.r[PC_REG], err))
 		}
 		c.r[PC_REG] += 2
-	}
-
-	if c.GetThumbMode() {
-		var err error
 		c.prefetchTHUMBBuffer[1], err = c.virtualMemory.Read16(c.r[PC_REG])
 		if err != nil {
 			panic(fmt.Sprintf("Failed to read instruction at 0x%08X: %v", c.r[PC_REG], err))
-		}
-		c.r[PC_REG] += 2
-		if c.config.Debug {
-			fmt.Printf("Prefetch[0]: 0x%04X\t\tPrefetch[1]: 0x%04X\n", c.prefetchTHUMBBuffer[0], c.prefetchTHUMBBuffer[1])
 		}
 	}
 }
@@ -666,7 +663,6 @@ func (c *ARM7TDMI) SetThumbMode(value bool) {
 			if err != nil {
 				panic(fmt.Sprintf("Failed to read instruction at 0x%08X: %v", c.r[PC_REG], err))
 			}
-			c.r[PC_REG] += 2
 		} else {
 			var err error
 			c.prefetchARMBuffer[0], err = c.virtualMemory.Read32(c.r[PC_REG])
@@ -678,7 +674,6 @@ func (c *ARM7TDMI) SetThumbMode(value bool) {
 			if err != nil {
 				panic(fmt.Sprintf("Failed to read instruction at 0x%08X: %v", c.r[PC_REG], err))
 			}
-			c.r[PC_REG] += 4
 		}
 	}
 }
