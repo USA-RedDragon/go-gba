@@ -4,9 +4,13 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 
 	"github.com/USA-RedDragon/go-gba/internal/config"
+	"github.com/USA-RedDragon/go-gba/internal/emulator"
 
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -29,8 +33,8 @@ func New() *cobra.Command {
 
 func run(cmd *cobra.Command, args []string) error {
 	config := config.GetConfig(cmd)
-	fmt.Printf("%v\n", config)
 
+	emu := emulator.New(config)
 	go func() {
 		ch := make(chan os.Signal, 1)
 		signal.Notify(ch, os.Interrupt)
@@ -38,6 +42,22 @@ func run(cmd *cobra.Command, args []string) error {
 			fmt.Println("Exiting")
 		}
 	}()
+
+	ebiten.SetWindowSize(int(config.Scale*240), int(config.Scale*160))
+	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+	ebiten.SetFullscreen(config.Fullscreen)
+	ebiten.SetScreenClearedEveryFrame(false)
+
+	if config.ROMPath != "" {
+		name := strings.TrimSuffix(filepath.Base(config.ROMPath), filepath.Ext(config.ROMPath))
+		ebiten.SetWindowTitle(name + " | go-gba")
+	} else {
+		ebiten.SetWindowTitle("go-gba")
+	}
+
+	if err := ebiten.RunGame(emu); err != nil {
+		return err
+	}
 
 	return nil
 }
