@@ -74,3 +74,42 @@ func (s SUB) Execute(cpu interfaces.CPU) {
 
 	panic("Not implemented")
 }
+
+type ADD2 struct {
+	instruction uint16
+}
+
+func (a ADD2) Execute(cpu interfaces.CPU) {
+	fmt.Println("ADD2")
+
+	// Bits 8-6 are the immediate value
+	imm := uint32((a.instruction & (1<<8 | 1<<7 | 1<<6)) >> 6)
+	// Bits 5-3 are the source register
+	rs := uint8((a.instruction & (1<<5 | 1<<4 | 1<<3)) >> 3)
+	// Bits 2-0 are the destination register
+	rd := uint8((a.instruction & (1<<2 | 1<<1 | 1<<0)))
+
+	// bit 10 == 1 means the operand is an immediate value
+	if a.instruction&(1<<10)>>10 == 1 {
+		fmt.Printf("ADD2 r%d, r%d, #%d\n", rd, rs, imm)
+		cpu.WriteRegister(rd, cpu.ReadRegister(rs)+imm)
+	} else {
+		fmt.Printf("ADD2 r%d, r%d, r%d\n", rd, rs, imm)
+		cpu.WriteRegister(rd, cpu.ReadRegister(rs)+cpu.ReadRegister(rd))
+	}
+
+	// Save condition flags
+	cpu.SetN(cpu.ReadRegister(rd)&(1<<31)>>31 == 1)
+	cpu.SetZ(cpu.ReadRegister(rd) == 0)
+	fmt.Println("Not setting C or V")
+}
+
+type SUB2 struct {
+	instruction uint16
+}
+
+func (s SUB2) Execute(cpu interfaces.CPU) {
+	fmt.Println("SUB2")
+
+	panic("Not implemented")
+}

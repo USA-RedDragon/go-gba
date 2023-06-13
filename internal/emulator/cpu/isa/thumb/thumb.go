@@ -58,7 +58,7 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 	case instruction&UnconditionalBranchMask == UnconditionalBranchFormat:
 		return matchUnconditionalBranch(instruction)
 	case instruction&ConditionalBranchMask == ConditionalBranchFormat:
-		return matchConditionalBranch(instruction)
+		return B{instruction}
 	case instruction&MultipleLoadStoreMask == MultipleLoadStoreFormat:
 		return matchMultipleLoadStore(instruction)
 	case instruction&LongBranchWithLinkMask == LongBranchWithLinkFormat:
@@ -82,7 +82,19 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 	case instruction&PCRelativeLoadMask == PCRelativeLoadFormat:
 		return LDR{instruction}
 	case instruction&HiRegisterOperationsOrBranchExchangeMask == HiRegisterOperationsOrBranchExchangeFormat:
-		return matchHiRegisterOperationsOrBranchExchange(instruction)
+		// bits 9-8 are the opcode
+		opcode := instruction & (1<<9 | 1<<8) >> 8
+		switch opcode {
+		case 0:
+			return ADDH{instruction}
+		case 1:
+			return CMPH{instruction}
+		case 2:
+			return MOVH{instruction}
+		case 3:
+			return BX{instruction}
+		}
+		return nil
 	case instruction&AluOperationMask == AluOperationFormat:
 		return matchAluOperation(instruction)
 	case instruction&MoveCompareAddSubtractImmediateMask == MoveCompareAddSubtractImmediateFormat:
@@ -99,7 +111,12 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 		}
 		return nil
 	case instruction&AddSubtractMask == AddSubtractFormat:
-		return matchAddSubtract(instruction)
+		subtract := instruction&(1<<9)>>9 == 1
+		if subtract {
+			return SUB2{instruction}
+		} else {
+			return ADD2{instruction}
+		}
 	case instruction&MoveShiftedRegisterMask == MoveShiftedRegisterFormat:
 		return matchMoveShiftedRegister(instruction)
 	default:
@@ -114,11 +131,6 @@ func matchSoftwareInterrupt(instruction uint16) isa.Instruction {
 
 func matchUnconditionalBranch(instruction uint16) isa.Instruction {
 	fmt.Println("UnconditionalBranch")
-	return nil
-}
-
-func matchConditionalBranch(instruction uint16) isa.Instruction {
-	fmt.Println("ConditionalBranch")
 	return nil
 }
 
@@ -177,18 +189,8 @@ func matchLoadStoreSignExtendedByteHalfword(instruction uint16) isa.Instruction 
 	return nil
 }
 
-func matchHiRegisterOperationsOrBranchExchange(instruction uint16) isa.Instruction {
-	fmt.Println("HiRegisterOperationsOrBranchExchange")
-	return nil
-}
-
 func matchAluOperation(instruction uint16) isa.Instruction {
 	fmt.Println("AluOperation")
-	return nil
-}
-
-func matchAddSubtract(instruction uint16) isa.Instruction {
-	fmt.Println("AddSubtract")
 	return nil
 }
 
