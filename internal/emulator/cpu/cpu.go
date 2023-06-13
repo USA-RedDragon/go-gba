@@ -192,8 +192,13 @@ func (c *ARM7TDMI) WriteSPSR(value uint32) {
 
 func (c *ARM7TDMI) ReadRegister(reg uint8) uint32 {
 	if c.GetThumbMode() {
-		if reg > 7 {
+		if reg > 7 && reg != PC_REG && reg != LR_REG {
 			panic(fmt.Sprintf("Invalid register number %d", reg))
+		}
+		if reg == PC_REG {
+			return c.ReadPC()
+		} else if reg == LR_REG {
+			return c.ReadLR()
 		}
 		return c.r[reg]
 	} else {
@@ -267,73 +272,85 @@ func (c *ARM7TDMI) ReadRegister(reg uint8) uint32 {
 
 func (c *ARM7TDMI) WriteRegister(reg uint8, value uint32) {
 	if c.GetThumbMode() {
-		if reg > 7 {
+		if reg > 7 && reg != PC_REG && reg != LR_REG {
 			panic(fmt.Sprintf("Invalid register number %d", reg))
 		}
-		c.r[reg] = value
+		if reg == PC_REG {
+			c.WritePC(value)
+		} else if reg == LR_REG {
+			c.WriteLR(value)
+		} else {
+			c.r[reg] = value
+		}
 	} else {
 		if reg > 16 {
 			panic(fmt.Sprintf("Invalid register number %d", reg))
 		}
-		switch cpuMode(c.r[CPSR_REG] & 0x1F) {
-		case systemMode:
-			c.r[reg] = value
-		case userMode:
-			c.r[reg] = value
-		case fiqMode:
-			switch reg {
-			case 8:
-				c.r8_fiq = value
-			case 9:
-				c.r9_fiq = value
-			case 10:
-				c.r10_fiq = value
-			case 11:
-				c.r11_fiq = value
-			case 12:
-				c.r12_fiq = value
-			case 13:
-				c.sp_fiq = value
-			case 14:
-				c.lr_fiq = value
-			default:
+		if reg == PC_REG {
+			c.WritePC(value)
+		} else if reg == LR_REG {
+			c.WriteLR(value)
+		} else {
+			switch cpuMode(c.r[CPSR_REG] & 0x1F) {
+			case systemMode:
 				c.r[reg] = value
-			}
-		case irqMode:
-			switch reg {
-			case 13:
-				c.sp_irq = value
-			case 14:
-				c.lr_irq = value
-			default:
+			case userMode:
 				c.r[reg] = value
-			}
-		case supervisorMode:
-			switch reg {
-			case 13:
-				c.sp_svc = value
-			case 14:
-				c.lr_svc = value
-			default:
-				c.r[reg] = value
-			}
-		case abortMode:
-			switch reg {
-			case 13:
-				c.sp_abt = value
-			case 14:
-				c.lr_abt = value
-			default:
-				c.r[reg] = value
-			}
-		case undefinedMode:
-			switch reg {
-			case 13:
-				c.sp_und = value
-			case 14:
-				c.lr_und = value
-			default:
-				c.r[reg] = value
+			case fiqMode:
+				switch reg {
+				case 8:
+					c.r8_fiq = value
+				case 9:
+					c.r9_fiq = value
+				case 10:
+					c.r10_fiq = value
+				case 11:
+					c.r11_fiq = value
+				case 12:
+					c.r12_fiq = value
+				case 13:
+					c.sp_fiq = value
+				case 14:
+					c.lr_fiq = value
+				default:
+					c.r[reg] = value
+				}
+			case irqMode:
+				switch reg {
+				case 13:
+					c.sp_irq = value
+				case 14:
+					c.lr_irq = value
+				default:
+					c.r[reg] = value
+				}
+			case supervisorMode:
+				switch reg {
+				case 13:
+					c.sp_svc = value
+				case 14:
+					c.lr_svc = value
+				default:
+					c.r[reg] = value
+				}
+			case abortMode:
+				switch reg {
+				case 13:
+					c.sp_abt = value
+				case 14:
+					c.lr_abt = value
+				default:
+					c.r[reg] = value
+				}
+			case undefinedMode:
+				switch reg {
+				case 13:
+					c.sp_und = value
+				case 14:
+					c.lr_und = value
+				default:
+					c.r[reg] = value
+				}
 			}
 		}
 	}
