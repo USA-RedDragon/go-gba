@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/USA-RedDragon/go-gba/internal/config"
 	"github.com/USA-RedDragon/go-gba/internal/emulator/cpu/isa/arm"
 	"github.com/USA-RedDragon/go-gba/internal/emulator/cpu/isa/thumb"
 	"github.com/USA-RedDragon/go-gba/internal/emulator/memory"
@@ -65,6 +66,8 @@ type ARM7TDMI struct {
 	prefetchTHUMBBuffer [2]uint16
 
 	halted bool
+
+	config *config.Config
 }
 
 // Enum for CPU mode
@@ -80,11 +83,12 @@ const (
 	systemMode     cpuMode = 0b11111
 )
 
-func NewARM7TDMI() *ARM7TDMI {
+func NewARM7TDMI(config *config.Config) *ARM7TDMI {
 	cpu := &ARM7TDMI{
 		virtualMemory: memory.MMIO{},
 		biosROM:       [BIOSROMSize]byte{},
 		onChipRAM:     [OnChipRAMSize]byte{},
+		config:        config,
 	}
 	cpu.virtualMemory.AddMMIO(cpu.biosROM[:], 0x00000000, BIOSROMSize)
 	// 0x00004000-0x01FFFFFF is unused
@@ -104,9 +108,9 @@ func (c *ARM7TDMI) RegisterMMIO(data []byte, address uint32, size uint32) {
 }
 
 func (c *ARM7TDMI) loadBIOSROM() {
-	bios, err := os.ReadFile("gba_bios.bin")
+	bios, err := os.ReadFile(c.config.BIOSPath)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to load bios rom from gba_bios.bin: %v", err))
+		panic(fmt.Sprintf("Failed to load bios rom: %v", err))
 	}
 	if len(bios) != BIOSROMSize {
 		panic(fmt.Sprintf("BIOS ROM size is %d, expected %d", len(bios), BIOSROMSize))
@@ -130,7 +134,10 @@ func (c *ARM7TDMI) Reset() {
 	c.prefetchARMBuffer[1] = uint32(c.biosROM[4]) | uint32(c.biosROM[5])<<8 | uint32(c.biosROM[6])<<16 | uint32(c.biosROM[7])<<24
 	c.r[PC_REG] += 4
 
-	fmt.Printf("Prefetch[0]: 0x%08X\t\tPrefetch[1]: 0x%08X\n", c.prefetchARMBuffer[0], c.prefetchARMBuffer[1])
+	if c.config.Debug {
+		fmt.Printf("Resetting CPU\n")
+		fmt.Printf("Prefetch[0]: 0x%08X\t\tPrefetch[1]: 0x%08X\n", c.prefetchARMBuffer[0], c.prefetchARMBuffer[1])
+	}
 
 	c.halted = false
 }
@@ -433,16 +440,18 @@ func (c *ARM7TDMI) stepARM() {
 	instruction := c.prefetchARMBuffer[0]
 	c.prefetchARMBuffer[0] = c.prefetchARMBuffer[1]
 
-	fmt.Printf("\n\nPC:  0x%08X\t\tInstruction 0x%08X\n", c.ReadPC(), instruction)
-	fmt.Printf("R0:  0x%08X\t\t R1: 0x%08X\t\tR3:   0x%08X\n", c.r[0], c.r[1], c.r[3])
-	fmt.Printf("R4:  0x%08X\t\t R5: 0x%08X\t\tR6:   0x%08X\n", c.r[4], c.r[5], c.r[6])
-	fmt.Printf("R7:  0x%08X\t\t R8: 0x%08X\t\tR9:   0x%08X\n", c.r[7], c.r[8], c.r[9])
-	fmt.Printf("R10: 0x%08X\t\tR11: 0x%08X\t\tR12:  0x%08X\n", c.r[10], c.r[11], c.r[12])
-	fmt.Printf("SP:  0x%08X\t\t LR: 0x%08X\t\tCPSR: 0x%08X\n", c.ReadSP(), c.ReadLR(), c.ReadCPSR())
-	if cpuMode(c.r[CPSR_REG]&0x1F) != systemMode && cpuMode(c.r[CPSR_REG]&0x1F) != userMode {
-		fmt.Printf("SPSR: 0x%08X\n", c.ReadSPSR())
+	if c.config.TraceRegisters {
+		fmt.Printf("\n\nPC:  0x%08X\t\tInstruction 0x%08X\n", c.ReadPC(), instruction)
+		fmt.Printf("R0:  0x%08X\t\t R1: 0x%08X\t\tR3:   0x%08X\n", c.r[0], c.r[1], c.r[3])
+		fmt.Printf("R4:  0x%08X\t\t R5: 0x%08X\t\tR6:   0x%08X\n", c.r[4], c.r[5], c.r[6])
+		fmt.Printf("R7:  0x%08X\t\t R8: 0x%08X\t\tR9:   0x%08X\n", c.r[7], c.r[8], c.r[9])
+		fmt.Printf("R10: 0x%08X\t\tR11: 0x%08X\t\tR12:  0x%08X\n", c.r[10], c.r[11], c.r[12])
+		fmt.Printf("SP:  0x%08X\t\t LR: 0x%08X\t\tCPSR: 0x%08X\n", c.ReadSP(), c.ReadLR(), c.ReadCPSR())
+		if cpuMode(c.r[CPSR_REG]&0x1F) != systemMode && cpuMode(c.r[CPSR_REG]&0x1F) != userMode {
+			fmt.Printf("SPSR: 0x%08X\n", c.ReadSPSR())
+		}
+		fmt.Printf("Prefetch[0]: 0x%08X\t\tPrefetch[1]: 0x%08X\n", c.prefetchARMBuffer[0], c.prefetchARMBuffer[1])
 	}
-	fmt.Printf("Prefetch[0]: 0x%08X\t\tPrefetch[1]: 0x%08X\n", c.prefetchARMBuffer[0], c.prefetchARMBuffer[1])
 
 	var condition uint32 = instruction >> 28
 	conditionFailed := false
@@ -553,7 +562,9 @@ func (c *ARM7TDMI) stepARM() {
 		// If we branched, we can't use the instructions in the pipeline
 		// Check for the offset being off by 1, which means we should switch to THUMB mode
 		if oldPC != c.r[PC_REG] && !c.GetThumbMode() {
-			fmt.Printf("Branching from 0x%08X to 0x%08X, flushing pipeline\n", oldPC, c.r[PC_REG])
+			if c.config.Debug {
+				fmt.Printf("Branching from 0x%08X to 0x%08X, flushing pipeline\n", oldPC, c.r[PC_REG])
+			}
 			var err error
 			c.prefetchARMBuffer[0], err = c.virtualMemory.Read32(c.r[PC_REG])
 			if err != nil {
@@ -570,25 +581,28 @@ func (c *ARM7TDMI) stepARM() {
 			panic(fmt.Sprintf("Failed to read instruction at 0x%08X: %v", c.r[PC_REG], err))
 		}
 		c.r[PC_REG] += 4
-		fmt.Printf("Prefetch[0]: 0x%08X\t\tPrefetch[1]: 0x%08X\n", c.prefetchARMBuffer[0], c.prefetchARMBuffer[1])
+		if c.config.Debug {
+			fmt.Printf("Prefetch[0]: 0x%08X\t\tPrefetch[1]: 0x%08X\n", c.prefetchARMBuffer[0], c.prefetchARMBuffer[1])
+		}
 	}
 }
 
 func (c *ARM7TDMI) stepThumb() {
-	fmt.Println("Executing THUMB instruction")
 	instruction := c.prefetchTHUMBBuffer[0]
 	c.prefetchTHUMBBuffer[0] = c.prefetchTHUMBBuffer[1]
 
-	fmt.Printf("\n\nPC:  0x%08X\t\tInstruction 0x%04X\n", c.ReadPC(), instruction)
-	fmt.Printf("R0:  0x%08X\t\t R1: 0x%08X\t\tR3:   0x%08X\n", c.r[0], c.r[1], c.r[3])
-	fmt.Printf("R4:  0x%08X\t\t R5: 0x%08X\t\tR6:   0x%08X\n", c.r[4], c.r[5], c.r[6])
-	fmt.Printf("R7:  0x%08X\t\t SP: 0x%08X\t\tR9:   0x%08X\n", c.r[7], c.r[8], c.r[9])
-	fmt.Printf("R10: 0x%08X\t\tR11: 0x%08X\t\tR12:  0x%08X\n", c.r[10], c.r[11], c.r[12])
-	fmt.Printf("SP:  0x%08X\t\t LR: 0x%08X\t\tCPSR: 0x%08X\n", c.ReadSP(), c.ReadLR(), c.ReadCPSR())
-	if cpuMode(c.r[CPSR_REG]&0x1F) != systemMode && cpuMode(c.r[CPSR_REG]&0x1F) != userMode {
-		fmt.Printf("SPSR: 0x%08X\n", c.ReadSPSR())
+	if c.config.TraceRegisters {
+		fmt.Printf("\n\nPC:  0x%08X\t\tInstruction 0x%04X\n", c.ReadPC(), instruction)
+		fmt.Printf("R0:  0x%08X\t\t R1: 0x%08X\t\tR3:   0x%08X\n", c.r[0], c.r[1], c.r[3])
+		fmt.Printf("R4:  0x%08X\t\t R5: 0x%08X\t\tR6:   0x%08X\n", c.r[4], c.r[5], c.r[6])
+		fmt.Printf("R7:  0x%08X\t\t SP: 0x%08X\t\tR9:   0x%08X\n", c.r[7], c.r[8], c.r[9])
+		fmt.Printf("R10: 0x%08X\t\tR11: 0x%08X\t\tR12:  0x%08X\n", c.r[10], c.r[11], c.r[12])
+		fmt.Printf("SP:  0x%08X\t\t LR: 0x%08X\t\tCPSR: 0x%08X\n", c.ReadSP(), c.ReadLR(), c.ReadCPSR())
+		if cpuMode(c.r[CPSR_REG]&0x1F) != systemMode && cpuMode(c.r[CPSR_REG]&0x1F) != userMode {
+			fmt.Printf("SPSR: 0x%08X\n", c.ReadSPSR())
+		}
+		fmt.Printf("Prefetch[0]: 0x%04X\t\tPrefetch[1]: 0x%04X\n", c.prefetchTHUMBBuffer[0], c.prefetchTHUMBBuffer[1])
 	}
-	fmt.Printf("Prefetch[0]: 0x%04X\t\tPrefetch[1]: 0x%04X\n", c.prefetchTHUMBBuffer[0], c.prefetchTHUMBBuffer[1])
 
 	oldPC := c.r[PC_REG]
 
@@ -604,7 +618,9 @@ func (c *ARM7TDMI) stepThumb() {
 	// If we branched, we can't use the instructions in the pipeline
 	// Check for the offset being off by 1, which means we should switch to THUMB mode
 	if oldPC != c.r[PC_REG] && !c.GetThumbMode() {
-		fmt.Printf("Branching from 0x%08X to 0x%08X, flushing pipeline\n", oldPC, c.r[PC_REG])
+		if c.config.Debug {
+			fmt.Printf("Branching from 0x%08X to 0x%08X, flushing pipeline\n", oldPC, c.r[PC_REG])
+		}
 		var err error
 		c.prefetchTHUMBBuffer[0], err = c.virtualMemory.Read16(c.r[PC_REG])
 		if err != nil {
@@ -620,7 +636,9 @@ func (c *ARM7TDMI) stepThumb() {
 			panic(fmt.Sprintf("Failed to read instruction at 0x%08X: %v", c.r[PC_REG], err))
 		}
 		c.r[PC_REG] += 2
-		fmt.Printf("Prefetch[0]: 0x%04X\t\tPrefetch[1]: 0x%04X\n", c.prefetchTHUMBBuffer[0], c.prefetchTHUMBBuffer[1])
+		if c.config.Debug {
+			fmt.Printf("Prefetch[0]: 0x%04X\t\tPrefetch[1]: 0x%04X\n", c.prefetchTHUMBBuffer[0], c.prefetchTHUMBBuffer[1])
+		}
 	}
 }
 

@@ -1,23 +1,15 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
+	"log"
 
-	"github.com/USA-RedDragon/go-gba/internal/emulator/cpu"
+	"github.com/USA-RedDragon/go-gba/cmd"
 )
 
 func main() {
-	signalChannel := make(chan os.Signal, 1)
-	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
-
-	fmt.Println("Starting GBA emulator...")
-
-	cpu := cpu.NewARM7TDMI()
-	go cpu.Run()
-	<-signalChannel
-	cpu.Halt()
-	os.Exit(0)
+	rootCmd := cmd.New()
+	rootCmd.Version = "next"
+	if err := rootCmd.Execute(); err != nil {
+		log.Fatal(err)
+	}
 }
