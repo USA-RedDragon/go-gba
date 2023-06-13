@@ -9,6 +9,7 @@ import (
 
 	"github.com/USA-RedDragon/go-gba/internal/config"
 	"github.com/USA-RedDragon/go-gba/internal/emulator"
+	"github.com/USA-RedDragon/go-gba/internal/emulator/cpu"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/spf13/cobra"
@@ -27,36 +28,48 @@ func New() *cobra.Command {
 	cmd.Flags().BoolP("fullscreen", "f", false, "enable fullscreen")
 	cmd.Flags().BoolP("trace-registers", "t", false, "trace CPU registers")
 	cmd.Flags().BoolP("debug", "d", false, "enable debug logging")
+	cmd.Flags().Bool("cpu-only", false, "only run the CPU (for debugging)")
 
 	return cmd
 }
 
 func run(cmd *cobra.Command, args []string) error {
-	config := config.GetConfig(cmd)
-
-	emu := emulator.New(config)
-	go func() {
-		ch := make(chan os.Signal, 1)
-		signal.Notify(ch, os.Interrupt)
-		for range ch {
-			fmt.Println("Exiting")
-		}
-	}()
-
-	ebiten.SetWindowSize(int(config.Scale*240), int(config.Scale*160))
-	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
-	ebiten.SetFullscreen(config.Fullscreen)
-	ebiten.SetScreenClearedEveryFrame(false)
-
-	if config.ROMPath != "" {
-		name := strings.TrimSuffix(filepath.Base(config.ROMPath), filepath.Ext(config.ROMPath))
-		ebiten.SetWindowTitle(name + " | go-gba")
-	} else {
-		ebiten.SetWindowTitle("go-gba")
-	}
-
-	if err := ebiten.RunGame(emu); err != nil {
+	cpuOnly, err := cmd.Flags().GetBool("cpu-only")
+	if err != nil {
 		return err
+	}
+	if cpuOnly {
+		c := cpu.NewARM7TDMI(config.GetConfig(cmd))
+		c.Run()
+		return nil
+	} else {
+
+		config := config.GetConfig(cmd)
+
+		emu := emulator.New(config)
+		go func() {
+			ch := make(chan os.Signal, 1)
+			signal.Notify(ch, os.Interrupt)
+			for range ch {
+				fmt.Println("Exiting")
+			}
+		}()
+
+		ebiten.SetWindowSize(int(config.Scale*240), int(config.Scale*160))
+		ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+		ebiten.SetFullscreen(config.Fullscreen)
+		ebiten.SetScreenClearedEveryFrame(false)
+
+		if config.ROMPath != "" {
+			name := strings.TrimSuffix(filepath.Base(config.ROMPath), filepath.Ext(config.ROMPath))
+			ebiten.SetWindowTitle(name + " | go-gba")
+		} else {
+			ebiten.SetWindowTitle("go-gba")
+		}
+
+		if err := ebiten.RunGame(emu); err != nil {
+			return err
+		}
 	}
 
 	return nil

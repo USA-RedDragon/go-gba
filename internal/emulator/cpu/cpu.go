@@ -126,8 +126,10 @@ func (c *ARM7TDMI) Reset() {
 	c.lr_svc = c.r[PC_REG]
 	c.sp_svc = c.r[SP_REG]
 
-	// IRQs disabled, FIQs disabled, ARM mode, Supervisor mode
-	c.r[CPSR_REG] = 0b0000_0000_0000_0000_0000_0000_1101_0011
+	c.r[SP_REG] = 0x03007F00 // Stack pointer to the top of on-chip RAM
+
+	// IRQs disabled, FIQs disabled, ARM mode, system mode
+	c.r[CPSR_REG] = 0x1F
 
 	c.r[PC_REG] = 0x00000000
 
@@ -453,7 +455,6 @@ func (c *ARM7TDMI) stepARM() {
 		if cpuMode(c.r[CPSR_REG]&0x1F) != systemMode && cpuMode(c.r[CPSR_REG]&0x1F) != userMode {
 			fmt.Printf("SPSR: 0x%08X\n", c.ReadSPSR())
 		}
-		fmt.Printf("Prefetch[0]: 0x%08X\t\tPrefetch[1]: 0x%08X\n", c.prefetchARMBuffer[0], c.prefetchARMBuffer[1])
 	}
 
 	var condition uint32 = instruction >> 28
