@@ -66,6 +66,7 @@ type ARM7TDMI struct {
 	prefetchTHUMBBuffer [2]uint16
 
 	halted bool
+	exit   bool
 
 	config *config.Config
 }
@@ -120,6 +121,7 @@ func (c *ARM7TDMI) loadBIOSROM() {
 
 func (c *ARM7TDMI) Reset() {
 	c.halted = true
+	c.exit = false
 
 	c.lr_svc = c.r[PC_REG]
 	c.sp_svc = c.r[SP_REG]
@@ -140,6 +142,7 @@ func (c *ARM7TDMI) Reset() {
 	}
 
 	c.halted = false
+	c.exit = false
 }
 
 func (c *ARM7TDMI) ReadSPSR() uint32 {
@@ -691,12 +694,14 @@ func (c *ARM7TDMI) GetThumbMode() bool {
 func (c *ARM7TDMI) Run() {
 	cycleTime := time.Second / 16777216
 	prevTime := time.Now()
-	for !c.halted {
-		// if c.r[CPSR_REG] bit 5 is set, the CPU is in thumb mode
-		if c.r[CPSR_REG]&(1<<5)>>5 == 0 {
-			c.stepARM()
-		} else {
-			c.stepThumb()
+	for !c.exit {
+		if !c.halted {
+			// if c.r[CPSR_REG] bit 5 is set, the CPU is in thumb mode
+			if c.r[CPSR_REG]&(1<<5)>>5 == 0 {
+				c.stepARM()
+			} else {
+				c.stepThumb()
+			}
 		}
 
 		time.Sleep(cycleTime - time.Since(prevTime))
@@ -706,6 +711,14 @@ func (c *ARM7TDMI) Run() {
 
 func (c *ARM7TDMI) Halt() {
 	c.halted = true
+}
+
+func (c *ARM7TDMI) Unhalt() {
+	c.halted = false
+}
+
+func (c *ARM7TDMI) Quit() {
+	c.exit = true
 }
 
 func (c *ARM7TDMI) SetZ(value bool) {
