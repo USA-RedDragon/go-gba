@@ -41,7 +41,7 @@ func (bl BL) Execute(cpu interfaces.CPU) {
 		offset |= 0xFF000000
 	}
 	offset <<= 2
-	cpu.WriteLR(cpu.ReadPC() - 4)
+	cpu.WriteLR(cpu.ReadPC())
 	// if bit 0 of the offset is set, we're in THUMB mode
 	if offset&0x00000001 == 1 {
 		fmt.Println("Setting THUMB mode")
