@@ -180,6 +180,26 @@ func (c *ARM7TDMI) WriteSPSR(value uint32) {
 	}
 }
 
+func (c *ARM7TDMI) ReadHighRegister(reg uint8) uint32 {
+	if !c.GetThumbMode() {
+		panic("Cannot read high register in ARM mode, use ReadRegister")
+	}
+	if reg > 15 {
+		panic(fmt.Sprintf("Invalid register number %d", reg))
+	}
+	return c.r[reg+8]
+}
+
+func (c *ARM7TDMI) WriteHighRegister(reg uint8, value uint32) {
+	if !c.GetThumbMode() {
+		panic("Cannot write high register in ARM mode, use WriteRegister")
+	}
+	if reg > 15 {
+		panic(fmt.Sprintf("Invalid register number %d", reg))
+	}
+	c.r[reg+8] = value
+}
+
 func (c *ARM7TDMI) ReadRegister(reg uint8) uint32 {
 	if c.GetThumbMode() {
 		if reg > 7 && reg != PC_REG && reg != LR_REG && reg != SP_REG && reg != CPSR_REG {

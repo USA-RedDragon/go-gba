@@ -5,6 +5,8 @@ import "github.com/USA-RedDragon/go-gba/internal/emulator/memory"
 type CPU interface {
 	ReadRegister(reg uint8) uint32
 	WriteRegister(reg uint8, value uint32)
+	ReadHighRegister(reg uint8) uint32
+	WriteHighRegister(reg uint8, value uint32)
 	ReadSP() uint32
 	WriteSP(value uint32)
 	ReadLR() uint32
