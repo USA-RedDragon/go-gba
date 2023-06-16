@@ -29,6 +29,33 @@ func (h *MMIO) findMMIOIndex(addr uint32) (int, error) {
 	return 0, fmt.Errorf("MMIO address %08x not found", addr)
 }
 
+// Read8 reads a 8-bit value from the MMIO address space and returns it.
+func (h *MMIO) Read8(addr uint32) (uint8, error) {
+	index, err := h.findMMIOIndex(addr)
+	if err != nil {
+		return 0, err
+	}
+	nonMapped := addr - h.mmios[index].address
+	if nonMapped >= h.mmios[index].size {
+		return 0, fmt.Errorf("MMIO address %08x not found", addr)
+	}
+	return h.mmios[index].data[nonMapped], nil
+}
+
+// Write8 writes a 8-bit value to the MMIO address space.
+func (h *MMIO) Write8(addr uint32, data uint8) error {
+	index, err := h.findMMIOIndex(addr)
+	if err != nil {
+		return err
+	}
+	nonMapped := addr - h.mmios[index].address
+	if nonMapped >= h.mmios[index].size {
+		return fmt.Errorf("MMIO address %08x not found", addr)
+	}
+	h.mmios[index].data[nonMapped] = data
+	return nil
+}
+
 // Read16 reads a 16-bit value from the MMIO address space and returns it.
 func (h *MMIO) Read16(addr uint32) (uint16, error) {
 	index, err := h.findMMIOIndex(addr)
