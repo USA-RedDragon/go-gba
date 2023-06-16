@@ -12,7 +12,7 @@ const (
 	MoveShiftedRegisterFormat                  uint16 = 0b0000_0000_0000_0000
 	AddSubtractMask                            uint16 = 0b1111_1000_0000_0000
 	AddSubtractFormat                          uint16 = 0b0001_1000_0000_0000
-	MoveCompareAddSubtractImmediateMask        uint16 = 0b1111_1000_0000_0000
+	MoveCompareAddSubtractImmediateMask        uint16 = 0b1110_0000_0000_0000
 	MoveCompareAddSubtractImmediateFormat      uint16 = 0b0010_0000_0000_0000
 	AluOperationMask                           uint16 = 0b1111_1100_0000_0000
 	AluOperationFormat                         uint16 = 0b0100_0000_0000_0000
@@ -62,19 +62,54 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 	case instruction&MultipleLoadStoreMask == MultipleLoadStoreFormat:
 		return matchMultipleLoadStore(instruction)
 	case instruction&LongBranchWithLinkMask == LongBranchWithLinkFormat:
-		return matchLongBranchWithLink(instruction)
+		return LBL{instruction}
 	case instruction&AddOffsetToStackPointerMask == AddOffsetToStackPointerFormat:
-		return matchAddOffsetToStackPointer(instruction)
+		return SUBSP{instruction}
 	case instruction&PushPopRegistersMask == PushPopRegistersFormat:
-		return matchPushPopRegisters(instruction)
+		push := instruction&(1<<11)>>11 == 0
+		if push {
+			return PUSH{instruction}
+		} else {
+			return POP{instruction}
+		}
 	case instruction&LoadStoreHalfwordMask == LoadStoreHalfwordFormat:
-		return matchLoadStoreHalfword(instruction)
+		// Bit 11 = 1 for LDRH, 0 for STRH
+		ldr := instruction&(1<<11)>>11 == 1
+		if ldr {
+			return LDRH{instruction}
+		} else {
+			return STRH{instruction}
+		}
+		return nil
 	case instruction&SPRelativeLoadStoreMask == SPRelativeLoadStoreFormat:
-		return matchSPRelativeLoadStore(instruction)
+		// Bit 11 == 1 for LDRPC, 0 for STRPC
+		ldr := instruction&(1<<11)>>11 == 1
+		if ldr {
+			return LDRSP{instruction}
+		} else {
+			return STRSP{instruction}
+		}
 	case instruction&LoadAddressMask == LoadAddressFormat:
 		return matchLoadAddress(instruction)
 	case instruction&LoadStoreWithImmediateOffsetMask == LoadStoreWithImmediateOffsetFormat:
-		return matchLoadStoreWithImmediateOffset(instruction)
+		// Bit 12 == 1 for LDRImmB, 0 for LDRImmW
+		isByte := instruction&(1<<12)>>12 == 1
+		// Bit 11 == 1 for LDRImm, 0 for STRImm
+		ldr := instruction&(1<<11)>>11 == 1
+		if isByte {
+			if ldr {
+				return LDRBImm{instruction}
+			} else {
+				return STRBImm{instruction}
+			}
+		} else {
+			if ldr {
+				return LDRWImm{instruction}
+			} else {
+				return STRWImm{instruction}
+			}
+		}
+		return nil
 	case instruction&LoadStoreWithRegisterOffsetMask == LoadStoreWithRegisterOffsetFormat:
 		return matchLoadStoreWithRegisterOffset(instruction)
 	case instruction&LoadStoreSignExtendedByteHalfwordMask == LoadStoreSignExtendedByteHalfwordFormat:
@@ -96,9 +131,46 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 		}
 		return nil
 	case instruction&AluOperationMask == AluOperationFormat:
-		return matchAluOperation(instruction)
+		// Bits 9-6 are the opcode
+		opcode := instruction & (1<<9 | 1<<8 | 1<<7 | 1<<6) >> 6
+		switch opcode {
+		case 0b0000:
+			return AND{instruction}
+		case 0b0001:
+			return EOR{instruction}
+		case 0b0010:
+			return LSL{instruction}
+		case 0b0011:
+			return LSR{instruction}
+		case 0b0100:
+			return ASR{instruction}
+		case 0b0101:
+			return ADC{instruction}
+		case 0b0110:
+			return SBC{instruction}
+		case 0b0111:
+			return ROR{instruction}
+		case 0b1000:
+			return TST{instruction}
+		case 0b1001:
+			return NEG{instruction}
+		case 0b1010:
+			return CMPALU{instruction}
+		case 0b1011:
+			return CMN{instruction}
+		case 0b1100:
+			return ORR{instruction}
+		case 0b1101:
+			return MUL{instruction}
+		case 0b1110:
+			return BIC{instruction}
+		case 0b1111:
+			return MVN{instruction}
+		}
+		return nil
 	case instruction&MoveCompareAddSubtractImmediateMask == MoveCompareAddSubtractImmediateFormat:
 		op := instruction & (1<<12 | 1<<11) >> 11
+		fmt.Printf("Instruction: 0x%04X\n", instruction)
 		switch op {
 		case 0:
 			return MOV{instruction}
@@ -118,9 +190,20 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 			return ADD2{instruction}
 		}
 	case instruction&MoveShiftedRegisterMask == MoveShiftedRegisterFormat:
-		return matchMoveShiftedRegister(instruction)
+		// Bits 12-11 are the opcode
+		op := instruction & (1<<12 | 1<<11) >> 11
+
+		switch op {
+		case 0b00:
+			return LSLMoveShifted{instruction}
+		case 0b01:
+			return LSRMoveShifted{instruction}
+		case 0b10:
+			return ASRMoveShifted{instruction}
+		}
+		return nil
 	default:
-		panic(fmt.Sprintf("Unknown THUMB instruction: 0x%04X", instruction))
+		panic(fmt.Sprintf("Unknown THUMB instruction: %016b", instruction))
 	}
 }
 
@@ -139,38 +222,8 @@ func matchMultipleLoadStore(instruction uint16) isa.Instruction {
 	return nil
 }
 
-func matchLongBranchWithLink(instruction uint16) isa.Instruction {
-	fmt.Println("LongBranchWithLink")
-	return nil
-}
-
-func matchAddOffsetToStackPointer(instruction uint16) isa.Instruction {
-	fmt.Println("AddOffsetToStackPointer")
-	return nil
-}
-
-func matchPushPopRegisters(instruction uint16) isa.Instruction {
-	fmt.Println("PushPopRegisters")
-	return nil
-}
-
-func matchLoadStoreHalfword(instruction uint16) isa.Instruction {
-	fmt.Println("LoadStoreHalfword")
-	return nil
-}
-
-func matchSPRelativeLoadStore(instruction uint16) isa.Instruction {
-	fmt.Println("SPRelativeLoadStore")
-	return nil
-}
-
 func matchLoadAddress(instruction uint16) isa.Instruction {
 	fmt.Println("LoadAddress")
-	return nil
-}
-
-func matchLoadStoreWithImmediateOffset(instruction uint16) isa.Instruction {
-	fmt.Println("LoadStoreWithImmediateOffset")
 	return nil
 }
 
@@ -186,15 +239,5 @@ func matchLoadStoreWithRegisterOffset(instruction uint16) isa.Instruction {
 
 func matchLoadStoreSignExtendedByteHalfword(instruction uint16) isa.Instruction {
 	fmt.Println("LoadStoreSignExtendedByteHalfword")
-	return nil
-}
-
-func matchAluOperation(instruction uint16) isa.Instruction {
-	fmt.Println("AluOperation")
-	return nil
-}
-
-func matchMoveShiftedRegister(instruction uint16) isa.Instruction {
-	fmt.Println("MoveShiftedRegister")
 	return nil
 }

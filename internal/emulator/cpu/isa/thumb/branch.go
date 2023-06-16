@@ -95,3 +95,39 @@ func (a BX) Execute(cpu interfaces.CPU) {
 		}
 	}
 }
+
+type LBL struct {
+	instruction uint16
+}
+
+func (a LBL) Execute(cpu interfaces.CPU) {
+	fmt.Println("LBL")
+
+	// Bit 11 == 1 is low offset
+	low := a.instruction&(1<<11)>>11 == 1
+
+	// Bits 10-0 are the offset
+	offset := uint16(a.instruction & 0x7FF)
+
+	if low {
+		offset = offset << 1
+		fmt.Println("bl Low offset")
+		// Take the LR
+		lr := cpu.ReadLR()
+		// Write the current PC to the LR
+		cpu.WriteLR(cpu.ReadPC())
+		// Add the offset to the LR and store it in the PC
+		newPC := lr + uint32(offset)
+		cpu.WritePC(newPC + 2)
+		// Set bit 0 of the LR to 1
+		cpu.WriteLR(cpu.ReadLR() | 1)
+	} else {
+		offset = offset << 12
+		signedOffset := int16(offset)
+		fmt.Println("bl High offset")
+		fmt.Printf("Adding %d to PC (%08X)\n", signedOffset, cpu.ReadPC())
+		newPC := cpu.ReadPC() + uint32(signedOffset)
+		// Add the offset to the PC and store it in LR
+		cpu.WriteLR(newPC)
+	}
+}
