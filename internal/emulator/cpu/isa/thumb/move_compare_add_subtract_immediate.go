@@ -92,7 +92,7 @@ func (a ADD2) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("ADD2")
 
 	// Bits 8-6 are the immediate value
-	imm := uint32((a.instruction & (1<<8 | 1<<7 | 1<<6)) >> 6)
+	imm := uint8((a.instruction & (1<<8 | 1<<7 | 1<<6)) >> 6)
 	// Bits 5-3 are the source register
 	rs := uint8((a.instruction & (1<<5 | 1<<4 | 1<<3)) >> 3)
 	// Bits 2-0 are the destination register
@@ -105,18 +105,17 @@ func (a ADD2) Execute(cpu interfaces.CPU) (repipeline bool) {
 	// bit 10 == 1 means the operand is an immediate value
 	if a.instruction&(1<<10)>>10 == 1 {
 		fmt.Printf("ADD2 r%d, r%d, #%d\n", rd, rs, imm)
-		cpu.WriteRegister(rd, rsVal+imm)
+		cpu.WriteRegister(rd, rsVal+uint32(imm))
 
 		// Set the C flag if the addition overflowed
 		uint64Val = uint64(rsVal) + uint64(imm)
 	} else {
 		fmt.Printf("ADD2 r%d, r%d, r%d\n", rd, rs, imm)
-		rdVal := cpu.ReadRegister(rd)
-
-		cpu.WriteRegister(rd, rsVal+rdVal)
+		immVal := cpu.ReadRegister(imm)
+		cpu.WriteRegister(rd, rsVal+immVal)
 
 		// Set the C flag if the addition overflowed
-		uint64Val = uint64(rsVal) + uint64(rdVal)
+		uint64Val = uint64(rsVal) + uint64(immVal)
 	}
 
 	if uint64Val > 0xFFFFFFFF {
