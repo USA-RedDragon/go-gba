@@ -20,10 +20,16 @@ const (
 	OnBoardRAMSize = 256 * 1024
 	// IORAMSize is 1KB
 	IORAMSize = 1 * 1024
-	SP_REG    = 13
-	LR_REG    = 14
-	PC_REG    = 15
-	CPSR_REG  = 16
+	// VRAMSize is 96KB
+	VRAMSize = 96 * 1024
+	// OAMSize is 1KB
+	OAMSize = 1 * 1024
+	// PaletteRAMSize is 1KB
+	PaletteRAMSize = 1 * 1024
+	SP_REG         = 13
+	LR_REG         = 14
+	PC_REG         = 15
+	CPSR_REG       = 16
 )
 
 type ARM7TDMI struct {
@@ -61,6 +67,9 @@ type ARM7TDMI struct {
 	onChipRAM  [OnChipRAMSize]byte
 	onBoardRAM [OnBoardRAMSize]byte
 	ioRAM      [IORAMSize]byte
+	vRAM       [VRAMSize]byte
+	oam        [OAMSize]byte
+	paletteRAM [PaletteRAMSize]byte
 
 	halted bool
 	exit   bool
@@ -99,6 +108,10 @@ func NewARM7TDMI(config *config.Config) *ARM7TDMI {
 	// 0x03008000-0x03FFFFFF is unused
 	cpu.virtualMemory.AddMMIO(cpu.ioRAM[:], 0x04000000, IORAMSize)
 	// 0x04000400-0x04FFFFFF is unused
+	cpu.virtualMemory.AddMMIO(cpu.paletteRAM[:], 0x05000000, PaletteRAMSize)
+	cpu.virtualMemory.AddMMIO(cpu.vRAM[:], 0x06000000, VRAMSize)
+	cpu.virtualMemory.AddMMIO(cpu.oam[:], 0x07000000, OAMSize)
+
 	cpu.loadBIOSROM()
 	cpu.Reset()
 	return cpu
