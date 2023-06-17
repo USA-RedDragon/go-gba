@@ -167,7 +167,7 @@ func (t TEQ) Execute(cpu interfaces.CPU) (repipeline bool) {
 
 	if t.instruction&(1<<20)>>20 == 1 {
 		cpu.SetZ(res == 0)
-		cpu.SetN((res&(1<<31))>>31 == 1)
+		cpu.SetN(res&(1<<31) != 0)
 	}
 	return
 }
@@ -251,7 +251,7 @@ func (m MOV) Execute(cpu interfaces.CPU) (repipeline bool) {
 	// If bit 20 is set, then the instruction sets the condition codes.
 	if m.instruction&(1<<20)>>20 == 1 {
 		cpu.SetZ(val == 0)
-		cpu.SetN((val&(1<<31))>>31 == 1)
+		cpu.SetN(val&(1<<31) != 0)
 		cpu.SetC(carry)
 	}
 	return

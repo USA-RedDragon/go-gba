@@ -179,6 +179,8 @@ func (t TST) Execute(cpu interfaces.CPU) (repipeline bool) {
 
 	// Update the status registers
 	cpu.SetZ(res == 0)
+	// Set N if the result is negative
+	cpu.SetN(res&(1<<31) != 0)
 	return
 }
 
@@ -314,6 +316,7 @@ func (m MVN) Execute(cpu interfaces.CPU) (repipeline bool) {
 	cpu.WriteRegister(rd, ^cpu.ReadRegister(rs))
 
 	// N flag is set if the result is negative
+	cpu.SetN(cpu.ReadRegister(rd)&(1<<31) != 0)
 	return
 }
 

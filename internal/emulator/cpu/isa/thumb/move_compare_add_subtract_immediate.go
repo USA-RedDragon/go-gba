@@ -20,7 +20,7 @@ func (m MOV) Execute(cpu interfaces.CPU) (repipeline bool) {
 
 	cpu.WriteRegister(rd, imm)
 
-	cpu.SetN(imm&(1<<31)>>31 == 1)
+	cpu.SetN(imm&(1<<31) != 0)
 	cpu.SetZ(imm == 0)
 	return
 }
@@ -79,7 +79,7 @@ func (s SUB) Execute(cpu interfaces.CPU) (repipeline bool) {
 	// Subtract the immediate value from the destination register
 	cpu.WriteRegister(rd, cpu.ReadRegister(rd)-imm)
 
-	cpu.SetN(cpu.ReadRegister(rd)&(1<<31)>>31 == 1)
+	cpu.SetN(cpu.ReadRegister(rd)&(1<<31) != 0)
 	cpu.SetZ(cpu.ReadRegister(rd) == 0)
 	return
 }
@@ -159,7 +159,7 @@ func (s SUB2) Execute(cpu interfaces.CPU) (repipeline bool) {
 	}
 
 	// Save condition flags
-	cpu.SetN(cpu.ReadRegister(rd)&(1<<31)>>31 == 1)
+	cpu.SetN(cpu.ReadRegister(rd)&(1<<31) != 0)
 	cpu.SetZ(cpu.ReadRegister(rd) == 0)
 	return
 }
