@@ -299,6 +299,9 @@ func (m MVN) Execute(cpu interfaces.CPU) {
 
 	// Store the bitwise inverse of the source register in the destination register
 	cpu.WriteRegister(rd, ^cpu.ReadRegister(rs))
+
+	// N flag is set if the result is negative
+	cpu.SetN(cpu.ReadRegister(rd)&(1<<7) != 0)
 }
 
 type LSLMoveShifted struct {

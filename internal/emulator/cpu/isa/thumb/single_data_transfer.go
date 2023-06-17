@@ -118,6 +118,8 @@ func (s STRSP) Execute(cpu interfaces.CPU) {
 	if err != nil {
 		panic(err)
 	}
+
+	cpu.SetN(cpu.ReadRegister(rd)&0x80000000 != 0)
 }
 
 type LDRSP struct {

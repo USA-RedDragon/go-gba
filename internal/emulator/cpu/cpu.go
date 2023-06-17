@@ -500,7 +500,7 @@ func (c *ARM7TDMI) stepARM() {
 		fmt.Printf("R7:  0x%08X\t\t R8: 0x%08X\t\tR9:   0x%08X\n", c.r[7], c.r[8], c.r[9])
 		fmt.Printf("R10: 0x%08X\t\tR11: 0x%08X\t\tR12:  0x%08X\n", c.r[10], c.r[11], c.r[12])
 		fmt.Printf("SP:  0x%08X\t\t LR: 0x%08X\t\tPC:   0x%08X\n", c.ReadSP(), c.ReadLR(), c.ReadPC())
-		fmt.Printf("CPSR: 0x%08X\n", c.ReadCPSR())
+		fmt.Println(c.prettyCPSR())
 		if cpuMode(c.r[CPSR_REG]&0x1F) != systemMode && cpuMode(c.r[CPSR_REG]&0x1F) != userMode {
 			fmt.Printf("SPSR: 0x%08X\n", c.ReadSPSR())
 		}
@@ -626,6 +626,68 @@ func (c *ARM7TDMI) stepARM() {
 	}
 }
 
+func (c *ARM7TDMI) prettyCPSR() string {
+	nMode := "-"
+	if c.GetN() {
+		nMode = "N"
+	}
+	zMode := "-"
+	if c.GetZ() {
+		zMode = "Z"
+	}
+	cMode := "-"
+	if c.GetC() {
+		cMode = "C"
+	}
+	vMode := "-"
+	if c.GetV() {
+		vMode = "V"
+	}
+	iMode := "-"
+	if c.ReadCPSR()&(1<<7)>>7 == 1 {
+		iMode = "I"
+	}
+	fMode := "-"
+	if c.ReadCPSR()&(1<<6)>>6 == 1 {
+		fMode = "F"
+	}
+	thumbMode := "-"
+	if c.GetThumbMode() {
+		thumbMode = "T"
+	}
+
+	opMode := "unknown"
+	switch cpuMode(c.ReadCPSR() & 0x1F) {
+	case userMode:
+		opMode = "user"
+	case fiqMode:
+		opMode = "fiq"
+	case irqMode:
+		opMode = "irq"
+	case supervisorMode:
+		opMode = "supervisor"
+	case abortMode:
+		opMode = "abort"
+	case undefinedMode:
+		opMode = "undefined"
+	case systemMode:
+		opMode = "system"
+	}
+
+	return fmt.Sprintf(
+		"CPSR: %08X [%s%s%s%s%s%s%s] [Mode: %s]",
+		c.ReadCPSR(),
+		nMode,
+		zMode,
+		cMode,
+		vMode,
+		iMode,
+		fMode,
+		thumbMode,
+		opMode,
+	)
+}
+
 func (c *ARM7TDMI) stepThumb() {
 	// FETCH
 	c.r[PC_REG] += 2
@@ -641,7 +703,7 @@ func (c *ARM7TDMI) stepThumb() {
 		fmt.Printf("R7:  0x%08X\t\t R8: 0x%08X\t\tR9:   0x%08X\n", c.r[7], c.r[8], c.r[9])
 		fmt.Printf("R10: 0x%08X\t\tR11: 0x%08X\t\tR12:  0x%08X\n", c.r[10], c.r[11], c.r[12])
 		fmt.Printf("SP:  0x%08X\t\t LR: 0x%08X\t\tPC:   0x%08X\n", c.ReadSP(), c.ReadLR(), c.ReadPC())
-		fmt.Printf("CPSR: 0x%08X\n", c.ReadCPSR())
+		fmt.Println(c.prettyCPSR())
 		if cpuMode(c.r[CPSR_REG]&0x1F) != systemMode && cpuMode(c.r[CPSR_REG]&0x1F) != userMode {
 			fmt.Printf("SPSR: 0x%08X\n", c.ReadSPSR())
 		}

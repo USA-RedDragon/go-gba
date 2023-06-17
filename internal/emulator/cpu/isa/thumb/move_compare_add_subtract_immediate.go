@@ -94,19 +94,40 @@ func (a ADD2) Execute(cpu interfaces.CPU) {
 	// Bits 2-0 are the destination register
 	rd := uint8((a.instruction & (1<<2 | 1<<1 | 1<<0)))
 
+	rsVal := cpu.ReadRegister(rs)
+
+	uint64Val := uint64(0)
+
 	// bit 10 == 1 means the operand is an immediate value
 	if a.instruction&(1<<10)>>10 == 1 {
 		fmt.Printf("ADD2 r%d, r%d, #%d\n", rd, rs, imm)
-		cpu.WriteRegister(rd, cpu.ReadRegister(rs)+imm)
+		cpu.WriteRegister(rd, rsVal+imm)
+
+		// Set the C flag if the addition overflowed
+		uint64Val = uint64(rsVal) + uint64(imm)
 	} else {
 		fmt.Printf("ADD2 r%d, r%d, r%d\n", rd, rs, imm)
-		cpu.WriteRegister(rd, cpu.ReadRegister(rs)+cpu.ReadRegister(rd))
+		rdVal := cpu.ReadRegister(rd)
+
+		cpu.WriteRegister(rd, rsVal+rdVal)
+
+		// Set the C flag if the addition overflowed
+		uint64Val = uint64(rsVal) + uint64(rdVal)
 	}
 
+	if uint64Val > 0xFFFFFFFF {
+		cpu.SetC(true)
+	} else {
+		cpu.SetC(false)
+	}
+
+	rdVal := cpu.ReadRegister(rd)
+
 	// Save condition flags
-	cpu.SetN(cpu.ReadRegister(rd)&(1<<31)>>31 == 1)
-	cpu.SetZ(cpu.ReadRegister(rd) == 0)
-	fmt.Println("Not setting C or V")
+	cpu.SetN(rdVal&(1<<31)>>31 == 1)
+	cpu.SetZ(rdVal == 0)
+
+	fmt.Println("Not setting V flag")
 }
 
 type SUB2 struct {
@@ -152,11 +173,26 @@ func (a SUBSP) Execute(cpu interfaces.CPU) {
 
 	offset := imm << 2
 
+	sp := cpu.ReadSP()
+
 	if negative {
 		fmt.Printf("SUBSP #-%d\n", offset)
-		cpu.WriteSP(cpu.ReadSP() - offset)
+		cpu.WriteSP(sp - offset)
+		// Set the C flag if sp - offset underflows
+		if sp-offset > sp {
+			cpu.SetC(false)
+		} else {
+			cpu.SetC(true)
+		}
 	} else {
 		fmt.Printf("SUBSP #%d\n", offset)
-		cpu.WriteSP(cpu.ReadSP() + offset)
+		cpu.WriteSP(sp + offset)
+		// Set the C flag if sp + offset overflows
+		if sp+offset < sp {
+			cpu.SetC(false)
+		} else {
+			cpu.SetC(true)
+		}
 	}
+
 }
