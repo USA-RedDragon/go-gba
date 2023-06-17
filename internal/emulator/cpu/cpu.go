@@ -562,6 +562,7 @@ func (c *ARM7TDMI) FlushPipeline() {
 	}
 
 	fmt.Printf("FlushPipeline: Prefetch: [0x%08x, 0x%08x]\n", c.prefetchARMPipeline[0], c.prefetchARMPipeline[1])
+	fmt.Printf("FlushPipeline: Prefetch: [0x%04x, 0x%04x]\n", c.prefetchThumbPipeline[0], c.prefetchThumbPipeline[1])
 }
 
 func (c *ARM7TDMI) fetchThumb() uint16 {
@@ -589,11 +590,10 @@ func (c *ARM7TDMI) stepARM() {
 
 	if c.config.TraceRegisters {
 		fmt.Printf("\n\nInstruction 0x%08X\n", instruction)
-		fmt.Printf("R0:  0x%08X\t\t R1: 0x%08X\t\tR3:   0x%08X\n", c.r[0], c.r[1], c.r[3])
-		fmt.Printf("R4:  0x%08X\t\t R5: 0x%08X\t\tR6:   0x%08X\n", c.r[4], c.r[5], c.r[6])
-		fmt.Printf("R7:  0x%08X\t\t R8: 0x%08X\t\tR9:   0x%08X\n", c.r[7], c.r[8], c.r[9])
-		fmt.Printf("R10: 0x%08X\t\tR11: 0x%08X\t\tR12:  0x%08X\n", c.r[10], c.r[11], c.r[12])
-		fmt.Printf("SP:  0x%08X\t\t LR: 0x%08X\t\tPC:   0x%08X\n", c.ReadSP(), c.ReadLR(), c.ReadPC())
+		fmt.Printf(" R0: 0x%08X\t R1: 0x%08X\t R2: 0x%08X\t  R3: 0x%08X\n", c.r[0], c.r[1], c.r[2], c.r[3])
+		fmt.Printf(" R4: 0x%08X\t R5: 0x%08X\t R6: 0x%08X\t  R7: 0x%08X\n", c.r[4], c.r[5], c.r[6], c.r[7])
+		fmt.Printf(" R8: 0x%08X\t R9: 0x%08X\tR10: 0x%08X\t R11: 0x%08X\n", c.r[8], c.r[9], c.r[10], c.r[11])
+		fmt.Printf("R12: 0x%08X\t SP: 0x%08X\t LR: 0x%08X\t  PC: 0x%08X\n", c.r[12], c.ReadSP(), c.ReadLR(), c.ReadPC())
 		fmt.Println(c.prettyCPSR())
 		if cpuMode(c.r[CPSR_REG]&0x1F) != systemMode && cpuMode(c.r[CPSR_REG]&0x1F) != userMode {
 			fmt.Printf("SPSR: 0x%08X\n", c.ReadSPSR())
@@ -789,11 +789,10 @@ func (c *ARM7TDMI) stepThumb() {
 
 	if c.config.TraceRegisters {
 		fmt.Printf("\n\nInstruction 0x%04X\n", instruction)
-		fmt.Printf("R0:  0x%08X\t\t R1: 0x%08X\t\tR3:   0x%08X\n", c.r[0], c.r[1], c.r[3])
-		fmt.Printf("R4:  0x%08X\t\t R5: 0x%08X\t\tR6:   0x%08X\n", c.r[4], c.r[5], c.r[6])
-		fmt.Printf("R7:  0x%08X\t\t R8: 0x%08X\t\tR9:   0x%08X\n", c.r[7], c.r[8], c.r[9])
-		fmt.Printf("R10: 0x%08X\t\tR11: 0x%08X\t\tR12:  0x%08X\n", c.r[10], c.r[11], c.r[12])
-		fmt.Printf("SP:  0x%08X\t\t LR: 0x%08X\t\tPC:   0x%08X\n", c.ReadSP(), c.ReadLR(), c.ReadPC())
+		fmt.Printf(" R0: 0x%08X\t R1: 0x%08X\t R2: 0x%08X\t  R3: 0x%08X\n", c.r[0], c.r[1], c.r[2], c.r[3])
+		fmt.Printf(" R4: 0x%08X\t R5: 0x%08X\t R6: 0x%08X\t  R7: 0x%08X\n", c.r[4], c.r[5], c.r[6], c.r[7])
+		fmt.Printf(" R8: 0x%08X\t R9: 0x%08X\tR10: 0x%08X\t R11: 0x%08X\n", c.r[8], c.r[9], c.r[10], c.r[11])
+		fmt.Printf("R12: 0x%08X\t SP: 0x%08X\t LR: 0x%08X\t  PC: 0x%08X\n", c.r[12], c.ReadSP(), c.ReadLR(), c.ReadPC())
 		fmt.Println(c.prettyCPSR())
 		if cpuMode(c.r[CPSR_REG]&0x1F) != systemMode && cpuMode(c.r[CPSR_REG]&0x1F) != userMode {
 			fmt.Printf("SPSR: 0x%08X\n", c.ReadSPSR())
