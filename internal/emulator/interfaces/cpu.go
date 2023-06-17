@@ -17,6 +17,7 @@ type CPU interface {
 	WriteCPSR(value uint32)
 	ReadSPSR() uint32
 	WriteSPSR(value uint32)
+	FlushPipeline()
 
 	GetMMIO() *memory.MMIO
 
