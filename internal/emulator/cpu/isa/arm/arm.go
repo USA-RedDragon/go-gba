@@ -237,8 +237,22 @@ func unshiftRegister(instruction uint32, cpu interfaces.CPU) (uint32, bool) {
 	case 0b0000_0001: // Logical shift right
 		return cpu.ReadRegister(rm) >> shiftAmount, carry
 	case 0b0000_0010: // Arithmetic shift right
-		fmt.Printf("ASR: 0x%02X, RM: 0x%02X, RM val: %02X Result: 0x%02X\n", shiftAmount, rm, cpu.ReadRegister(rm), uint32(int32(cpu.ReadRegister(rm))>>shiftAmount))
-		return uint32(int32(cpu.ReadRegister(rm)) >> shiftAmount), carry
+		// An arithmetic shift right (ASR) is similar to logical shift right, except that the high bits
+		// are filled with bit 31 of Rm instead of zeros
+
+		carryBit := (cpu.ReadRegister(rm) & (1 << (shiftAmount - 1))) >> (shiftAmount - 1)
+
+		// Shift right by shiftAmount
+		shifted := cpu.ReadRegister(rm) >> shiftAmount
+		// Get the sign bit
+		highBit := shifted & (1 << 31)
+
+		// Fill the high bits we shifted to zeros with the highBit
+		for i := uint32(0); i < shiftAmount; i++ {
+			shifted |= highBit << (31 - i)
+		}
+
+		return shifted, carryBit == 1
 	case 0b0000_0011: // Rotate right
 		return bits.RotateLeft32(cpu.ReadRegister(rm), -int(shiftAmount)), carry
 	}
