@@ -56,7 +56,7 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 	case instruction&SoftwareInterruptMask == SoftwareInterruptFormat:
 		return matchSoftwareInterrupt(instruction)
 	case instruction&UnconditionalBranchMask == UnconditionalBranchFormat:
-		return matchUnconditionalBranch(instruction)
+		return UnconditionalBranch{instruction}
 	case instruction&ConditionalBranchMask == ConditionalBranchFormat:
 		return B{instruction}
 	case instruction&MultipleLoadStoreMask == MultipleLoadStoreFormat:
@@ -209,11 +209,6 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 
 func matchSoftwareInterrupt(instruction uint16) isa.Instruction {
 	fmt.Println("SoftwareInterrupt")
-	return nil
-}
-
-func matchUnconditionalBranch(instruction uint16) isa.Instruction {
-	fmt.Println("UnconditionalBranch")
 	return nil
 }
 

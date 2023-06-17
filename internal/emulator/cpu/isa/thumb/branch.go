@@ -6,6 +6,22 @@ import (
 	"github.com/USA-RedDragon/go-gba/internal/emulator/interfaces"
 )
 
+type UnconditionalBranch struct {
+	instruction uint16
+}
+
+func (u UnconditionalBranch) Execute(cpu interfaces.CPU) (repipeline bool) {
+	fmt.Println("UnconditionalBranch")
+
+	// Bits 10-0 are the offset
+	offset := int32(u.instruction&0b1111111111) << 1
+
+	fmt.Printf("Offset: %d\n", offset)
+	fmt.Printf("Address: 0x%08X\n", cpu.ReadPC()+uint32(offset))
+	cpu.WritePC(cpu.ReadPC() + uint32(offset))
+	return
+}
+
 type B struct {
 	instruction uint16
 }
