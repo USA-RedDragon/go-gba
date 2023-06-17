@@ -165,3 +165,141 @@ func (str STR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Printf("Address: 0x%X\n", address)
 	return
 }
+
+type LDM struct {
+	instruction uint32
+}
+
+func (ldm LDM) Execute(cpu interfaces.CPU) (repipeline bool) {
+	fmt.Println("LDM")
+
+	// Bit 24 == 1 means pre-indexed addressing
+	pre := ldm.instruction&(1<<24)>>24 == 1
+	// Bit 23 == 1 means the offset is added to the base register (up)
+	up := ldm.instruction&(1<<23)>>23 == 1
+	// Bit 22 == 1 means to load the PSR or force user mode
+	psr := ldm.instruction&(1<<22)>>22 == 1
+	// Bit 21 == 1 means the base register is written back to
+	writeback := ldm.instruction&(1<<21)>>21 == 1
+
+	fmt.Printf("Pre: %t, Up: %t, PSR: %t, Writeback: %t\n", pre, up, psr, writeback)
+
+	// Bits 19-16 are the base register
+	rn := uint8((ldm.instruction >> 16) & 0xF)
+
+	// Bits 15-0 are the register list
+	registerList := ldm.instruction & 0xFFFF
+
+	address := cpu.ReadRegister(rn)
+
+	// If the PSR bit is set, we need to load the PSR
+	if psr {
+		panic("Not implemented")
+	}
+
+	var registers []uint8
+	for i := uint8(0); i < 16; i++ {
+		if registerList&(1<<i)>>i == 1 {
+			registers = append(registers, i)
+		}
+	}
+
+	for _, register := range registers {
+		if pre {
+			if up {
+				address += 4
+			} else {
+				address -= 4
+			}
+		}
+		value, err := cpu.GetMMIO().Read32(address)
+		if err != nil {
+			panic(err)
+		}
+		cpu.WriteRegister(register, value)
+		if !pre {
+			if up {
+				address += 4
+			} else {
+				address -= 4
+			}
+		}
+	}
+
+	if !pre || writeback {
+		cpu.WriteRegister(rn, address)
+	}
+	return
+}
+
+type STM struct {
+	instruction uint32
+}
+
+func (stm STM) Execute(cpu interfaces.CPU) (repipeline bool) {
+	fmt.Println("STM")
+
+	// Bit 24 == 1 means pre-indexed addressing
+	pre := stm.instruction&(1<<24)>>24 == 1
+	// Bit 23 == 1 means the offset is added to the base register (up)
+	up := stm.instruction&(1<<23)>>23 == 1
+	// Bit 22 == 1 means to load the PSR or force user mode
+	psr := stm.instruction&(1<<22)>>22 == 1
+	// Bit 21 == 1 means the base register is written back to
+	writeback := stm.instruction&(1<<21)>>21 == 1
+
+	fmt.Printf("Pre: %t, Up: %t, PSR: %t, Writeback: %t\n", pre, up, psr, writeback)
+
+	// Bits 19-16 are the base register
+	rn := uint8((stm.instruction >> 16) & 0xF)
+
+	// Bits 15-0 are the register list
+	registerList := stm.instruction & 0xFFFF
+
+	fmt.Printf("stm r%d, 0x%X\n", rn, registerList)
+
+	address := cpu.ReadRegister(rn)
+
+	// If the PSR bit is set, we need to store the PSR
+	if psr {
+		panic("Not implemented")
+	}
+
+	var pushRegisters []uint8
+
+	// Collect the registers to push in backwards order so that they are pushed in the correct order
+	for i := 15; i >= 0; i-- {
+		if registerList&(1<<i)>>i == 1 {
+			pushRegisters = append(pushRegisters, uint8(i))
+		}
+	}
+
+	for _, reg := range pushRegisters {
+		// If pre-indexed addressing is used, the base register is updated
+		if pre {
+			if up {
+				address += 4
+			} else {
+				address -= 4
+			}
+		}
+		err := cpu.GetMMIO().Write32(address, cpu.ReadRegister(reg))
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("Pushing register r%d @ %08X\n", reg, address)
+		if !pre {
+			if up {
+				address += 4
+			} else {
+				address -= 4
+			}
+		}
+	}
+
+	if !pre || writeback {
+		cpu.WriteRegister(rn, address)
+	}
+
+	return
+}

@@ -106,6 +106,14 @@ func DecodeInstruction(instruction uint32) isa.Instruction {
 
 func matchBlockDataTransfer(instruction uint32) isa.Instruction {
 	fmt.Println("Block Data Transfer")
+	// Get bit 20 == 1 for load, 0 for store
+	load := (instruction & (1 << 20)) != 0
+
+	if load {
+		return LDM{instruction}
+	} else {
+		return STM{instruction}
+	}
 	return nil
 }
 
