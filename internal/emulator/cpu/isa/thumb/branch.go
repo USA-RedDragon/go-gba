@@ -73,7 +73,7 @@ func (a BX) Execute(cpu interfaces.CPU) {
 		fmt.Printf("Branching to r%d\n", rshs)
 		addr := cpu.ReadRegister(rshs)
 		fmt.Printf("Address: 0x%08X\n", addr)
-		if addr&1 == 1 {
+		if addr&0b11 != 0 {
 			fmt.Println("Setting THUMB mode")
 			cpu.WritePC(addr - 1)
 			cpu.SetThumbMode(true)
@@ -85,7 +85,7 @@ func (a BX) Execute(cpu interfaces.CPU) {
 		fmt.Printf("Branching to r%d\n", rshs+8)
 		addr := cpu.ReadRegister(rshs + 8)
 		fmt.Printf("Address: 0x%08X\n", addr)
-		if addr&1 == 1 {
+		if addr&0b11 != 0 {
 			fmt.Println("Setting THUMB mode")
 			cpu.WritePC(addr - 1)
 			cpu.SetThumbMode(true)

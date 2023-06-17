@@ -18,7 +18,7 @@ func (b B) Execute(cpu interfaces.CPU) {
 	}
 	offset <<= 2
 	// if bit 0 of the offset is set, we're in THUMB mode
-	if offset&0x00000001 == 1 {
+	if offset&0b11 != 0 {
 		fmt.Println("Setting THUMB mode")
 		cpu.WritePC(cpu.ReadPC() + offset - 1)
 		cpu.SetThumbMode(true)
@@ -43,7 +43,7 @@ func (bl BL) Execute(cpu interfaces.CPU) {
 	offset <<= 2
 	cpu.WriteLR(cpu.ReadPC())
 	// if bit 0 of the offset is set, we're in THUMB mode
-	if offset&0x00000001 == 1 {
+	if offset&0b11 != 0 {
 		fmt.Println("Setting THUMB mode")
 		cpu.WritePC(cpu.ReadPC() + offset - 1)
 		cpu.SetThumbMode(true)
@@ -66,7 +66,7 @@ func (bx BX) Execute(cpu interfaces.CPU) {
 	rm := uint8(bx.instruction & 0x0000000F)
 
 	// if bit 0 of the register is set, we're in THUMB mode
-	if cpu.ReadRegister(rm)&0x00000001 == 1 {
+	if cpu.ReadRegister(rm)&0b11 != 0 {
 		fmt.Println("Setting THUMB mode")
 		cpu.WritePC(cpu.ReadRegister(rm) - 1)
 		cpu.SetThumbMode(true)
