@@ -17,7 +17,7 @@ func (a B) Execute(cpu interfaces.CPU) {
 	cond := a.instruction & (1<<11 | 1<<10 | 1<<9 | 1<<8) >> 8
 
 	// Bits 7-0 are the 8-bit signed offset
-	offset := int8(a.instruction & 0xFF)
+	offset := int8(a.instruction&0xFF) << 1
 
 	conditionPassed := false
 	switch cond {
@@ -52,7 +52,13 @@ func (a B) Execute(cpu interfaces.CPU) {
 	}
 
 	if conditionPassed {
-		cpu.WritePC(cpu.ReadPC() + uint32(offset))
+		if offset == 0 {
+			fmt.Println("Branching to self")
+			cpu.FlushPipeline()
+			cpu.WritePC(cpu.ReadPC() - 2)
+		} else {
+			cpu.WritePC(cpu.ReadPC() + uint32(offset))
+		}
 	} else {
 		fmt.Println("Branch condition not met")
 	}
@@ -118,7 +124,7 @@ func (a LBL) Execute(cpu interfaces.CPU) {
 		cpu.WriteLR(cpu.ReadPC())
 		// Add the offset to the LR and store it in the PC
 		newPC := lr + uint32(offset)
-		cpu.WritePC(newPC + 2)
+		cpu.WritePC(newPC)
 		// Set bit 0 of the LR to 1
 		cpu.WriteLR(cpu.ReadLR() | 1)
 	} else {
