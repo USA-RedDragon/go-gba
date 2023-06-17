@@ -20,7 +20,9 @@ func (l LDR) Execute(cpu interfaces.CPU) {
 	fmt.Printf("ldr r%d, [pc, #0x%X]\n", rd, imm)
 	memory := cpu.GetMMIO()
 
-	address := cpu.ReadPC() + uint32(imm) - 2
+	address := cpu.ReadPC() + uint32(imm)
+	// Clear bit 1 of the address to ensure it's word aligned
+	address &= 0xFFFFFFFC
 	fmt.Printf("ldr r%d, [0x%X]\n", rd, address)
 
 	read, err := memory.Read32(address)
