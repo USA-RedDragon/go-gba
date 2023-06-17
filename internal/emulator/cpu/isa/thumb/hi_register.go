@@ -10,29 +10,31 @@ type ADDH struct {
 	instruction uint16
 }
 
-func (a ADDH) Execute(cpu interfaces.CPU) {
+func (a ADDH) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("ADDH")
 
 	panic("Not implemented")
+	return
 }
 
 type CMPH struct {
 	instruction uint16
 }
 
-func (c CMPH) Execute(cpu interfaces.CPU) {
+func (c CMPH) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("CMPH")
 
 	// This one needs to set condition flags
 
 	panic("Not implemented")
+	return
 }
 
 type MOVH struct {
 	instruction uint16
 }
 
-func (m MOVH) Execute(cpu interfaces.CPU) {
+func (m MOVH) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("MOVH")
 
 	// Bits 7-6 are the hi operand flags
@@ -58,4 +60,5 @@ func (m MOVH) Execute(cpu interfaces.CPU) {
 	default:
 		panic("Invalid hi operand flag")
 	}
+	return
 }

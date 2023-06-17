@@ -703,17 +703,20 @@ func (c *ARM7TDMI) stepARM() {
 		fmt.Printf("Executing instruction 0x%08X at 0x%08X\n", instruction, c.r[PC_REG])
 		instr := arm.DecodeInstruction(instruction)
 		if instr != nil {
-			instr.Execute(c)
+			repipeline := instr.Execute(c)
+			if repipeline {
+				c.FlushPipeline()
+			} else {
+				if oldPC != c.r[PC_REG] {
+					if c.config.Debug {
+						fmt.Printf("Branching from 0x%08X to 0x%08X, flushing pipeline\n", oldPC, c.r[PC_REG])
+					}
+					c.FlushPipeline()
+				}
+			}
 		} else {
 			fmt.Printf("Unknown instruction 0x%08X\n", instruction)
-		}
-
-		// If we branched, we can't use the instructions in the pipeline
-		if oldPC != c.r[PC_REG] {
-			if c.config.Debug {
-				fmt.Printf("Branching from 0x%08X to 0x%08X, flushing pipeline\n", oldPC, c.r[PC_REG])
-			}
-			c.FlushPipeline()
+			panic("")
 		}
 	}
 }
@@ -803,19 +806,20 @@ func (c *ARM7TDMI) stepThumb() {
 	// EXECUTE
 	oldPC := c.r[PC_REG]
 	if instr != nil {
-		instr.Execute(c)
+		repipeline := instr.Execute(c)
+		if repipeline {
+			c.FlushPipeline()
+		} else {
+			if oldPC != c.r[PC_REG] {
+				if c.config.Debug {
+					fmt.Printf("Branching from 0x%08X to 0x%08X, flushing pipeline\n", oldPC, c.r[PC_REG])
+				}
+				c.FlushPipeline()
+			}
+		}
 	} else {
 		fmt.Printf("Unknown instruction 0x%04X\n", instruction)
 		panic("")
-	}
-
-	// If we branched, we can't use the instructions in the pipeline
-	// Check for the offset being off by 1, which means we should switch to THUMB mode
-	if oldPC != c.r[PC_REG] {
-		if c.config.Debug {
-			fmt.Printf("Branching from 0x%08X to 0x%08X, flushing pipeline\n", oldPC, c.r[PC_REG])
-		}
-		c.FlushPipeline()
 	}
 }
 

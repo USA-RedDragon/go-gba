@@ -10,7 +10,7 @@ type B struct {
 	instruction uint32
 }
 
-func (b B) Execute(cpu interfaces.CPU) {
+func (b B) Execute(cpu interfaces.CPU) (repipeline bool) {
 	offset := b.instruction & 0x00FFFFFF
 	// Sign extend the offset
 	if offset&0x00800000 != 0 {
@@ -27,13 +27,14 @@ func (b B) Execute(cpu interfaces.CPU) {
 		cpu.SetThumbMode(false)
 	}
 	fmt.Printf("New PC 0x%X\n", cpu.ReadPC())
+	return
 }
 
 type BL struct {
 	instruction uint32
 }
 
-func (bl BL) Execute(cpu interfaces.CPU) {
+func (bl BL) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("Branch With Link")
 	offset := bl.instruction & 0x00FFFFFF
 	// Sign extend the offset
@@ -53,13 +54,14 @@ func (bl BL) Execute(cpu interfaces.CPU) {
 	}
 	fmt.Printf("Branching by 0x%X\n", offset)
 	fmt.Printf("New PC 0x%X\n", cpu.ReadPC())
+	return
 }
 
 type BX struct {
 	instruction uint32
 }
 
-func (bx BX) Execute(cpu interfaces.CPU) {
+func (bx BX) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("Branch Exchange")
 
 	// Bits 3-0 are the register to branch to
@@ -76,4 +78,5 @@ func (bx BX) Execute(cpu interfaces.CPU) {
 	}
 
 	fmt.Printf("New PC 0x%X\n", cpu.ReadPC())
+	return
 }

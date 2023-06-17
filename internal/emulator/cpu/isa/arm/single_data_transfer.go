@@ -10,7 +10,7 @@ type LDR struct {
 	instruction uint32
 }
 
-func (ldr LDR) Execute(cpu interfaces.CPU) {
+func (ldr LDR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	immediate := ldr.instruction&(1<<25)>>25 == 0
 	pre := ldr.instruction&(1<<24)>>24 == 1
 	up := ldr.instruction&(1<<23)>>23 == 1
@@ -88,13 +88,14 @@ func (ldr LDR) Execute(cpu interfaces.CPU) {
 		cpu.WriteRegister(rn, address)
 	}
 	fmt.Printf("Address: 0x%X\n", address)
+	return
 }
 
 type STR struct {
 	instruction uint32
 }
 
-func (str STR) Execute(cpu interfaces.CPU) {
+func (str STR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	immediate := str.instruction&(1<<25)>>25 == 0
 	pre := str.instruction&(1<<24)>>24 == 1
 	up := str.instruction&(1<<23)>>23 == 1
@@ -162,4 +163,5 @@ func (str STR) Execute(cpu interfaces.CPU) {
 		cpu.WriteRegister(rn, address)
 	}
 	fmt.Printf("Address: 0x%X\n", address)
+	return
 }

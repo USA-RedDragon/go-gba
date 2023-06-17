@@ -10,7 +10,7 @@ type MSR struct {
 	instruction uint32
 }
 
-func (m MSR) Execute(cpu interfaces.CPU) {
+func (m MSR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("PSR Transfer MSR")
 	// Bit 22 is destination
 	spsr := m.instruction&(1<<22)>>22 == 1
@@ -46,13 +46,14 @@ func (m MSR) Execute(cpu interfaces.CPU) {
 			}
 		}
 	}
+	return
 }
 
 type MRS struct {
 	instruction uint32
 }
 
-func (m MRS) Execute(cpu interfaces.CPU) {
+func (m MRS) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("PSR Transfer MRS")
 
 	// Bits 15-12 are the destination register
@@ -66,4 +67,5 @@ func (m MRS) Execute(cpu interfaces.CPU) {
 	} else {
 		cpu.WriteRegister(rd, cpu.ReadRegister(16))
 	}
+	return
 }

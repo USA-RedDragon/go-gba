@@ -10,7 +10,7 @@ type PUSH struct {
 	instruction uint16
 }
 
-func (p PUSH) Execute(cpu interfaces.CPU) {
+func (p PUSH) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("PUSH")
 
 	// Bit 8 denotes storing LR
@@ -38,13 +38,14 @@ func (p PUSH) Execute(cpu interfaces.CPU) {
 		cpu.GetMMIO().Write32(cpu.ReadSP(), cpu.ReadRegister(reg))
 		fmt.Printf("Pushing register r%d @ %08X\n", reg, cpu.ReadSP())
 	}
+	return
 }
 
 type POP struct {
 	instruction uint16
 }
 
-func (p POP) Execute(cpu interfaces.CPU) {
+func (p POP) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("POP")
 
 	// Bit 8 denotes loading PC
@@ -76,4 +77,5 @@ func (p POP) Execute(cpu interfaces.CPU) {
 		fmt.Printf("Popping register r%d @ %08X\n", reg, cpu.ReadSP())
 		cpu.WriteSP(cpu.ReadSP() + 4)
 	}
+	return
 }

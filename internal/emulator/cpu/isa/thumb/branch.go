@@ -10,7 +10,7 @@ type B struct {
 	instruction uint16
 }
 
-func (a B) Execute(cpu interfaces.CPU) {
+func (a B) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("B")
 	fmt.Println("ConditionalBranch")
 	// Bits 11-8 are the condition
@@ -53,22 +53,21 @@ func (a B) Execute(cpu interfaces.CPU) {
 
 	if conditionPassed {
 		if offset == 0 {
-			fmt.Println("Branching to self")
-			cpu.FlushPipeline()
-			cpu.WritePC(cpu.ReadPC() - 2)
+			return true
 		} else {
 			cpu.WritePC(cpu.ReadPC() + uint32(offset))
 		}
 	} else {
 		fmt.Println("Branch condition not met")
 	}
+	return
 }
 
 type BX struct {
 	instruction uint16
 }
 
-func (a BX) Execute(cpu interfaces.CPU) {
+func (a BX) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("BX")
 
 	// Bits 7-6 are the hi operand flags
@@ -100,13 +99,14 @@ func (a BX) Execute(cpu interfaces.CPU) {
 			cpu.SetThumbMode(false)
 		}
 	}
+	return
 }
 
 type LBL struct {
 	instruction uint16
 }
 
-func (a LBL) Execute(cpu interfaces.CPU) {
+func (a LBL) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("LBL")
 
 	// Bit 11 == 1 is low offset
@@ -136,4 +136,5 @@ func (a LBL) Execute(cpu interfaces.CPU) {
 		// Add the offset to the PC and store it in LR
 		cpu.WriteLR(newPC)
 	}
+	return
 }

@@ -10,7 +10,7 @@ type AND struct {
 	instruction uint16
 }
 
-func (a AND) Execute(cpu interfaces.CPU) {
+func (a AND) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("AND")
 
 	// Bits 5-3 are the source register
@@ -22,13 +22,14 @@ func (a AND) Execute(cpu interfaces.CPU) {
 	fmt.Printf("and r%d, r%d\n", rd, rs)
 
 	panic("Not implemented")
+	return
 }
 
 type EOR struct {
 	instruction uint16
 }
 
-func (e EOR) Execute(cpu interfaces.CPU) {
+func (e EOR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("EOR")
 
 	// Bits 5-3 are the source register
@@ -40,13 +41,14 @@ func (e EOR) Execute(cpu interfaces.CPU) {
 	fmt.Printf("eor r%d, r%d\n", rd, rs)
 
 	panic("Not implemented")
+	return
 }
 
 type LSL struct {
 	instruction uint16
 }
 
-func (l LSL) Execute(cpu interfaces.CPU) {
+func (l LSL) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("LSL")
 
 	// Bits 5-3 are the source register
@@ -58,13 +60,14 @@ func (l LSL) Execute(cpu interfaces.CPU) {
 	fmt.Printf("lsl r%d, r%d\n", rd, rs)
 
 	panic("Not implemented")
+	return
 }
 
 type LSR struct {
 	instruction uint16
 }
 
-func (l LSR) Execute(cpu interfaces.CPU) {
+func (l LSR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("LSR")
 
 	// Bits 5-3 are the source register
@@ -76,13 +79,14 @@ func (l LSR) Execute(cpu interfaces.CPU) {
 	fmt.Printf("lsr r%d, r%d\n", rd, rs)
 
 	panic("Not implemented")
+	return
 }
 
 type ASR struct {
 	instruction uint16
 }
 
-func (a ASR) Execute(cpu interfaces.CPU) {
+func (a ASR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("ASR")
 
 	// Bits 5-3 are the source register
@@ -94,13 +98,14 @@ func (a ASR) Execute(cpu interfaces.CPU) {
 	fmt.Printf("asr r%d, r%d\n", rd, rs)
 
 	panic("Not implemented")
+	return
 }
 
 type ADC struct {
 	instruction uint16
 }
 
-func (a ADC) Execute(cpu interfaces.CPU) {
+func (a ADC) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("ADC")
 
 	// Bits 5-3 are the source register
@@ -112,13 +117,14 @@ func (a ADC) Execute(cpu interfaces.CPU) {
 	fmt.Printf("adc r%d, r%d\n", rd, rs)
 
 	panic("Not implemented")
+	return
 }
 
 type SBC struct {
 	instruction uint16
 }
 
-func (s SBC) Execute(cpu interfaces.CPU) {
+func (s SBC) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("SBC")
 
 	// Bits 5-3 are the source register
@@ -130,13 +136,14 @@ func (s SBC) Execute(cpu interfaces.CPU) {
 	fmt.Printf("sbc r%d, r%d\n", rd, rs)
 
 	panic("Not implemented")
+	return
 }
 
 type ROR struct {
 	instruction uint16
 }
 
-func (r ROR) Execute(cpu interfaces.CPU) {
+func (r ROR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("ROR")
 
 	// Bits 5-3 are the source register
@@ -148,13 +155,14 @@ func (r ROR) Execute(cpu interfaces.CPU) {
 	fmt.Printf("ror r%d, r%d\n", rd, rs)
 
 	panic("Not implemented")
+	return
 }
 
 type TST struct {
 	instruction uint16
 }
 
-func (t TST) Execute(cpu interfaces.CPU) {
+func (t TST) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("TST")
 
 	// Bits 5-3 are the source register
@@ -171,14 +179,14 @@ func (t TST) Execute(cpu interfaces.CPU) {
 
 	// Update the status registers
 	cpu.SetZ(res == 0)
-	cpu.SetN(res&(1<<7) != 0)
+	return
 }
 
 type NEG struct {
 	instruction uint16
 }
 
-func (n NEG) Execute(cpu interfaces.CPU) {
+func (n NEG) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("NEG")
 
 	// Bits 5-3 are the source register
@@ -190,13 +198,14 @@ func (n NEG) Execute(cpu interfaces.CPU) {
 	fmt.Printf("neg r%d, r%d\n", rd, rs)
 
 	panic("Not implemented")
+	return
 }
 
 type CMPALU struct {
 	instruction uint16
 }
 
-func (c CMPALU) Execute(cpu interfaces.CPU) {
+func (c CMPALU) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("CMP")
 
 	// Bits 5-3 are the source register
@@ -208,13 +217,14 @@ func (c CMPALU) Execute(cpu interfaces.CPU) {
 	fmt.Printf("cmp r%d, r%d\n", rd, rs)
 
 	panic("Not implemented")
+	return
 }
 
 type CMN struct {
 	instruction uint16
 }
 
-func (c CMN) Execute(cpu interfaces.CPU) {
+func (c CMN) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("CMN")
 
 	// Bits 5-3 are the source register
@@ -226,13 +236,14 @@ func (c CMN) Execute(cpu interfaces.CPU) {
 	fmt.Printf("cmn r%d, r%d\n", rd, rs)
 
 	panic("Not implemented")
+	return
 }
 
 type ORR struct {
 	instruction uint16
 }
 
-func (o ORR) Execute(cpu interfaces.CPU) {
+func (o ORR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("ORR")
 
 	// Bits 5-3 are the source register
@@ -243,14 +254,14 @@ func (o ORR) Execute(cpu interfaces.CPU) {
 
 	fmt.Printf("orr r%d, r%d\n", rd, rs)
 
-	panic("Not implemented")
+	return
 }
 
 type MUL struct {
 	instruction uint16
 }
 
-func (m MUL) Execute(cpu interfaces.CPU) {
+func (m MUL) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("MUL")
 
 	// Bits 5-3 are the source register
@@ -262,13 +273,14 @@ func (m MUL) Execute(cpu interfaces.CPU) {
 	fmt.Printf("mul r%d, r%d\n", rd, rs)
 
 	panic("Not implemented")
+	return
 }
 
 type BIC struct {
 	instruction uint16
 }
 
-func (b BIC) Execute(cpu interfaces.CPU) {
+func (b BIC) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("BIC")
 
 	// Bits 5-3 are the source register
@@ -280,13 +292,14 @@ func (b BIC) Execute(cpu interfaces.CPU) {
 	fmt.Printf("bic r%d, r%d\n", rd, rs)
 
 	panic("Not implemented")
+	return
 }
 
 type MVN struct {
 	instruction uint16
 }
 
-func (m MVN) Execute(cpu interfaces.CPU) {
+func (m MVN) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("MVN")
 
 	// Bits 5-3 are the source register
@@ -301,14 +314,14 @@ func (m MVN) Execute(cpu interfaces.CPU) {
 	cpu.WriteRegister(rd, ^cpu.ReadRegister(rs))
 
 	// N flag is set if the result is negative
-	cpu.SetN(cpu.ReadRegister(rd)&(1<<7) != 0)
+	return
 }
 
 type LSLMoveShifted struct {
 	instruction uint16
 }
 
-func (l LSLMoveShifted) Execute(cpu interfaces.CPU) {
+func (l LSLMoveShifted) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("LSL")
 
 	// Bits 10-6 are the offset
@@ -328,13 +341,14 @@ func (l LSLMoveShifted) Execute(cpu interfaces.CPU) {
 	// Update the CPSR
 	cpu.SetZ(cpu.ReadRegister(rd) == 0)
 	cpu.SetN(cpu.ReadRegister(rd)&(1<<31) != 0)
+	return
 }
 
 type LSRMoveShifted struct {
 	instruction uint16
 }
 
-func (l LSRMoveShifted) Execute(cpu interfaces.CPU) {
+func (l LSRMoveShifted) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("LSR")
 
 	// Bits 10-6 are the offset
@@ -354,13 +368,14 @@ func (l LSRMoveShifted) Execute(cpu interfaces.CPU) {
 	// Update the CPSR
 	cpu.SetZ(cpu.ReadRegister(rd) == 0)
 	cpu.SetN(cpu.ReadRegister(rd)&(1<<31) != 0)
+	return
 }
 
 type ASRMoveShifted struct {
 	instruction uint16
 }
 
-func (a ASRMoveShifted) Execute(cpu interfaces.CPU) {
+func (a ASRMoveShifted) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("ASR")
 
 	// Bits 10-6 are the offset
@@ -375,4 +390,5 @@ func (a ASRMoveShifted) Execute(cpu interfaces.CPU) {
 	fmt.Printf("asrs r%d, r%d, #0x%X\n", rd, rs, offset)
 
 	panic("Not implemented")
+	return
 }

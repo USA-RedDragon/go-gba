@@ -10,7 +10,7 @@ type LDR struct {
 	instruction uint16
 }
 
-func (l LDR) Execute(cpu interfaces.CPU) {
+func (l LDR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	// Bits 10-8 are the destination register
 	rd := uint8(l.instruction & (1<<10 | 1<<9 | 1<<8) >> 8)
 
@@ -30,13 +30,14 @@ func (l LDR) Execute(cpu interfaces.CPU) {
 		panic(err)
 	}
 	cpu.WriteRegister(rd, read)
+	return
 }
 
 type LDRR struct {
 	instruction uint16
 }
 
-func (l LDRR) Execute(cpu interfaces.CPU) {
+func (l LDRR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	// Bit 10 is the B bit, which determines whether this is a byte or word
 	byte := l.instruction&(1<<10)>>10 == 1
 
@@ -56,13 +57,14 @@ func (l LDRR) Execute(cpu interfaces.CPU) {
 
 	fmt.Printf("ldr%s r%d, [r%d, r%d]\n", b, destinationSourceRegister, baseRegister, offsetRegister)
 	panic("Not implemented")
+	return
 }
 
 type STRR struct {
 	instruction uint16
 }
 
-func (s STRR) Execute(cpu interfaces.CPU) {
+func (s STRR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	// Bit 10 is the B bit, which determines whether this is a byte or word
 	byte := s.instruction&(1<<10)>>10 == 1
 
@@ -99,13 +101,14 @@ func (s STRR) Execute(cpu interfaces.CPU) {
 	if err != nil {
 		panic(err)
 	}
+	return
 }
 
 type STRSP struct {
 	instruction uint16
 }
 
-func (s STRSP) Execute(cpu interfaces.CPU) {
+func (s STRSP) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("STRSP")
 
 	// Bits 10-8 are the destination register
@@ -121,14 +124,15 @@ func (s STRSP) Execute(cpu interfaces.CPU) {
 		panic(err)
 	}
 
-	cpu.SetN(cpu.ReadRegister(rd)&0x80000000 != 0)
+	cpu.SetN(cpu.ReadRegister(rd)&(1<<31) != 0)
+	return
 }
 
 type LDRSP struct {
 	instruction uint16
 }
 
-func (l LDRSP) Execute(cpu interfaces.CPU) {
+func (l LDRSP) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("LDRSP")
 
 	// Bits 10-8 are the destination register
@@ -144,13 +148,14 @@ func (l LDRSP) Execute(cpu interfaces.CPU) {
 		panic(err)
 	}
 	cpu.WriteRegister(rd, mem)
+	return
 }
 
 type LDRH struct {
 	instruction uint16
 }
 
-func (l LDRH) Execute(cpu interfaces.CPU) {
+func (l LDRH) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("LDRH")
 
 	// Bits 10-6 are the offset
@@ -171,17 +176,18 @@ func (l LDRH) Execute(cpu interfaces.CPU) {
 	}
 
 	cpu.WriteRegister(rd, uint32(readHW))
+	return
 }
 
 type STRH struct {
 	instruction uint16
 }
 
-func (s STRH) Execute(cpu interfaces.CPU) {
+func (s STRH) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("STRH")
 
 	// Bits 10-6 are the offset
-	offset := uint32(s.instruction & (1<<10 | 1<<9 | 1<<8 | 1<<7 | 1<<6) >> 6)
+	offset := uint32(s.instruction&(1<<10|1<<9|1<<8|1<<7|1<<6)>>6) << 1
 
 	// Bits 5-3 are the base register
 	rb := uint8(s.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
@@ -193,13 +199,14 @@ func (s STRH) Execute(cpu interfaces.CPU) {
 
 	// Store the lower 16 bits of the rd into the address at rb + offset
 	cpu.GetMMIO().Write16(cpu.ReadRegister(rb)+offset, uint16(cpu.ReadRegister(rd)&0xFFFF))
+	return
 }
 
 type LDRBImm struct {
 	instruction uint16
 }
 
-func (l LDRBImm) Execute(cpu interfaces.CPU) {
+func (l LDRBImm) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("LDRBImm")
 
 	// Bits 10-6 are the offset
@@ -219,13 +226,14 @@ func (l LDRBImm) Execute(cpu interfaces.CPU) {
 		panic(err)
 	}
 	cpu.WriteRegister(rd, uint32(readByte))
+	return
 }
 
 type STRBImm struct {
 	instruction uint16
 }
 
-func (s STRBImm) Execute(cpu interfaces.CPU) {
+func (s STRBImm) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("STRBImm")
 
 	// Bits 10-6 are the offset
@@ -241,13 +249,14 @@ func (s STRBImm) Execute(cpu interfaces.CPU) {
 
 	// Store the byte in rd into the address at rb + offset
 	cpu.GetMMIO().Write8(cpu.ReadRegister(rb)+offset, uint8(cpu.ReadRegister(rd)&0xFF))
+	return
 }
 
 type LDRWImm struct {
 	instruction uint16
 }
 
-func (l LDRWImm) Execute(cpu interfaces.CPU) {
+func (l LDRWImm) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("LDRWImm")
 
 	// Bits 10-6 are the offset
@@ -268,13 +277,14 @@ func (l LDRWImm) Execute(cpu interfaces.CPU) {
 	}
 
 	cpu.WriteRegister(rd, mem)
+	return
 }
 
 type STRWImm struct {
 	instruction uint16
 }
 
-func (s STRWImm) Execute(cpu interfaces.CPU) {
+func (s STRWImm) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("STRWImm")
 
 	// Bits 10-6 are the offset
@@ -290,4 +300,5 @@ func (s STRWImm) Execute(cpu interfaces.CPU) {
 
 	// Store the word in rd into the address at rb + offset
 	cpu.GetMMIO().Write32(cpu.ReadRegister(rb)+offset, cpu.ReadRegister(rd))
+	return
 }

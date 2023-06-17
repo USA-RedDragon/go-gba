@@ -10,25 +10,27 @@ type AND struct {
 	instruction uint32
 }
 
-func (a AND) Execute(cpu interfaces.CPU) {
+func (a AND) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("AND")
 	panic("Not implemented")
+	return
 }
 
 type EOR struct {
 	instruction uint32
 }
 
-func (e EOR) Execute(cpu interfaces.CPU) {
+func (e EOR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("EOR")
 	panic("Not implemented")
+	return
 }
 
 type SUB struct {
 	instruction uint32
 }
 
-func (s SUB) Execute(cpu interfaces.CPU) {
+func (s SUB) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("SUB")
 	// If bit 25 is set, then the instruction is an immediate operation.
 	immediate := (s.instruction&(1<<25))>>25 == 1
@@ -54,22 +56,24 @@ func (s SUB) Execute(cpu interfaces.CPU) {
 		overflow := (rnVal^op2)>>31 == 1 && (rnVal^diff)>>31 == 1
 		cpu.SetConditionCodes(diff, carry, overflow)
 	}
+	return
 }
 
 type RSB struct {
 	instruction uint32
 }
 
-func (rsb RSB) Execute(cpu interfaces.CPU) {
+func (rsb RSB) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("RSB")
 	panic("Not implemented")
+	return
 }
 
 type ADD struct {
 	instruction uint32
 }
 
-func (a ADD) Execute(cpu interfaces.CPU) {
+func (a ADD) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("ADD")
 
 	immediate := (a.instruction&(1<<25))>>25 == 1
@@ -98,49 +102,53 @@ func (a ADD) Execute(cpu interfaces.CPU) {
 		overflow := (rnVal^op2)>>31 == 0 && (rnVal^res)>>31 == 1
 		cpu.SetConditionCodes(res, carry, overflow)
 	}
+	return
 }
 
 type ADC struct {
 	instruction uint32
 }
 
-func (a ADC) Execute(cpu interfaces.CPU) {
+func (a ADC) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("ADC")
 	panic("Not implemented")
+	return
 }
 
 type SBC struct {
 	instruction uint32
 }
 
-func (s SBC) Execute(cpu interfaces.CPU) {
+func (s SBC) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("SBC")
 	panic("Not implemented")
+	return
 }
 
 type RSC struct {
 	instruction uint32
 }
 
-func (rsc RSC) Execute(cpu interfaces.CPU) {
+func (rsc RSC) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("RSC")
 	panic("Not implemented")
+	return
 }
 
 type TST struct {
 	instruction uint32
 }
 
-func (t TST) Execute(cpu interfaces.CPU) {
+func (t TST) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("TST")
-	panic("Not implemented")
+	return
 }
 
 type TEQ struct {
 	instruction uint32
 }
 
-func (t TEQ) Execute(cpu interfaces.CPU) {
+func (t TEQ) Execute(cpu interfaces.CPU) (repipeline bool) {
 	// If bit 25 is set, then the instruction is an immediate operation.
 	immediate := (t.instruction&(1<<25))>>25 == 1
 
@@ -161,13 +169,14 @@ func (t TEQ) Execute(cpu interfaces.CPU) {
 		cpu.SetZ(res == 0)
 		cpu.SetN((res&(1<<31))>>31 == 1)
 	}
+	return
 }
 
 type CMP struct {
 	instruction uint32
 }
 
-func (c CMP) Execute(cpu interfaces.CPU) {
+func (c CMP) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("CMP")
 
 	// If bit 25 is set, then the instruction is an immediate operation.
@@ -194,31 +203,34 @@ func (c CMP) Execute(cpu interfaces.CPU) {
 		overflow := (rnVal^op2)>>31 == 1 && (rnVal^diff)>>31 == 1
 		cpu.SetConditionCodes(diff, carry, overflow)
 	}
+	return
 }
 
 type CMN struct {
 	instruction uint32
 }
 
-func (c CMN) Execute(cpu interfaces.CPU) {
+func (c CMN) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("CMN")
 	panic("Not implemented")
+	return
 }
 
 type ORR struct {
 	instruction uint32
 }
 
-func (o ORR) Execute(cpu interfaces.CPU) {
+func (o ORR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("ORR")
 	panic("Not implemented")
+	return
 }
 
 type MOV struct {
 	instruction uint32
 }
 
-func (m MOV) Execute(cpu interfaces.CPU) {
+func (m MOV) Execute(cpu interfaces.CPU) (repipeline bool) {
 	// Destination register is bits 15-12
 	destination := uint8((m.instruction & 0x0000F000) >> 12)
 
@@ -242,22 +254,24 @@ func (m MOV) Execute(cpu interfaces.CPU) {
 		cpu.SetN((val&(1<<31))>>31 == 1)
 		cpu.SetC(carry)
 	}
+	return
 }
 
 type BIC struct {
 	instruction uint32
 }
 
-func (b BIC) Execute(cpu interfaces.CPU) {
+func (b BIC) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("BIC")
-	panic("Not implemented")
+	return
 }
 
 type MVN struct {
 	instruction uint32
 }
 
-func (m MVN) Execute(cpu interfaces.CPU) {
+func (m MVN) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("MVN")
 	panic("Not implemented")
+	return
 }
