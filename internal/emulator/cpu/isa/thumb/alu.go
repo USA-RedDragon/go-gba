@@ -254,8 +254,16 @@ func (o ORR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	// Bits 2-0 are the destination register
 	rd := uint8(o.instruction & (1<<2 | 1<<1 | 1<<0))
 
+	rdVal := cpu.ReadRegister(rd)
+	rsVal := cpu.ReadRegister(rs)
+	res := rdVal | rsVal
+	cpu.WriteRegister(rd, res)
+
 	fmt.Printf("orr r%d, r%d\n", rd, rs)
 
+	// update the status registers
+	cpu.SetZ(res == 0)
+	cpu.SetN(res&(1<<31) != 0)
 	return
 }
 
