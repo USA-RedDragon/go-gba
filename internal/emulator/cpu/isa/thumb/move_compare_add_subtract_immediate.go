@@ -32,14 +32,19 @@ type CMP struct {
 func (c CMP) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("CMP")
 	// Bits 10-8 are the destination register
-	rd := c.instruction & (1<<10 | 1<<9 | 1<<8) >> 8
+	rd := uint8(c.instruction & (1<<10 | 1<<9 | 1<<8) >> 8)
 	// Bits 7-0 are the immediate value
 	imm := c.instruction & 0xFF
 
 	fmt.Printf("Destination register: %d\n", rd)
 	fmt.Printf("Immediate value: %d\n", imm)
 
-	panic("Not implemented")
+	// Subtract the immediate value from the destination register
+	res := cpu.ReadRegister(rd) - uint32(imm)
+
+	cpu.SetN(res&(1<<31) != 0)
+	cpu.SetZ(res == 0)
+
 	return
 }
 
