@@ -141,6 +141,29 @@ type TST struct {
 
 func (t TST) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("TST")
+
+	// If bit 25 is set, then the instruction is an immediate operation.
+	immediate := (t.instruction&(1<<25))>>25 == 1
+
+	// Rn is bits 19-16
+	rn := uint8((t.instruction & 0x000F0000) >> 16)
+
+	rnVal := cpu.ReadRegister(rn)
+
+	op2 := uint32(0)
+	carry := false
+	if immediate {
+		op2, carry = unshiftImmediate(t.instruction & 0x00000FFF)
+	} else {
+		op2, carry = unshiftRegister(t.instruction&0x00000FFF, cpu)
+	}
+
+	res := rnVal & op2
+
+	cpu.SetZ(res == 0)
+	cpu.SetN(res>>31 == 1)
+	cpu.SetC(carry)
+
 	return
 }
 
@@ -263,6 +286,34 @@ type BIC struct {
 
 func (b BIC) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("BIC")
+
+	// Destination register is bits 15-12
+	rd := uint8((b.instruction & 0x0000F000) >> 12)
+
+	// If bit 25 is set, then the instruction is an immediate operation.
+	immediate := (b.instruction&(1<<25))>>25 == 1
+
+	// 2nd operand is bits 11-0
+	op2 := uint32(0)
+	carry := false
+	if immediate {
+		op2, carry = unshiftImmediate(b.instruction & 0x00000FFF)
+	} else {
+		op2, carry = unshiftRegister(b.instruction&0x00000FFF, cpu)
+	}
+
+	// Rd = Rn AND NOT Op2
+	rdVal := cpu.ReadRegister(rd)
+	res := rdVal &^ op2
+	cpu.WriteRegister(rd, res)
+
+	// If bit 20 is set, then the instruction sets the condition codes.
+	if b.instruction&(1<<20)>>20 == 1 {
+		cpu.SetZ(res == 0)
+		cpu.SetN(res&(1<<31) != 0)
+		cpu.SetC(carry)
+	}
+
 	return
 }
 
