@@ -70,11 +70,11 @@ func (bx BX) Execute(cpu interfaces.CPU) (repipeline bool) {
 	// if bit 0 of the register is set, we're in THUMB mode
 	if cpu.ReadRegister(rm)&0b11 != 0 {
 		fmt.Println("Setting THUMB mode")
-		cpu.WritePC(cpu.ReadRegister(rm) - 1)
 		cpu.SetThumbMode(true)
+		cpu.WritePC(cpu.ReadRegister(rm) - 1)
 	} else {
-		cpu.WritePC(cpu.ReadRegister(rm))
 		cpu.SetThumbMode(false)
+		cpu.WritePC(cpu.ReadRegister(rm))
 	}
 
 	fmt.Printf("New PC 0x%X\n", cpu.ReadPC())

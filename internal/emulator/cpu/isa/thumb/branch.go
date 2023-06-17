@@ -142,7 +142,7 @@ func (a LBL) Execute(cpu interfaces.CPU) (repipeline bool) {
 		newPC := lr + uint32(offset)
 		cpu.WritePC(newPC)
 		// Set bit 0 of the LR to 1
-		cpu.WriteLR(cpu.ReadLR() | 1)
+		cpu.WriteLR((cpu.ReadLR() | 1) - 2)
 	} else {
 		offset = offset << 12
 		signedOffset := int16(offset)
