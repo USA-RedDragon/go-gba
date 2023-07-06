@@ -14,7 +14,9 @@ func (u UnconditionalBranch) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("UnconditionalBranch")
 
 	// Bits 10-0 are the offset
-	offset := int32(u.instruction&0b1111111111) << 1
+	offset := int32(u.instruction & 0b11111111111)
+	offset <<= 21
+	offset >>= 20
 
 	fmt.Printf("Offset: %d\n", offset)
 	fmt.Printf("Address: 0x%08X\n", cpu.ReadPC()+uint32(offset))
@@ -31,6 +33,8 @@ func (a B) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("ConditionalBranch")
 	// Bits 11-8 are the condition
 	cond := a.instruction & (1<<11 | 1<<10 | 1<<9 | 1<<8) >> 8
+
+	fmt.Printf("Condition: 0b%04b\n", cond)
 
 	// Bits 7-0 are the 8-bit signed offset
 	offset := int8(a.instruction&0xFF) << 1

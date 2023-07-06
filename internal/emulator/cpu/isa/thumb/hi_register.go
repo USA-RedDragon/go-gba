@@ -92,5 +92,6 @@ func (m MOVH) Execute(cpu interfaces.CPU) (repipeline bool) {
 	default:
 		panic("Invalid hi operand flag")
 	}
+
 	return
 }

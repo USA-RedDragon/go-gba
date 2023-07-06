@@ -60,7 +60,13 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 	case instruction&ConditionalBranchMask == ConditionalBranchFormat:
 		return B{instruction}
 	case instruction&MultipleLoadStoreMask == MultipleLoadStoreFormat:
-		return matchMultipleLoadStore(instruction)
+		// Bit 11 = 1 for LDMIA, 0 for STMIA
+		ldr := instruction&(1<<11)>>11 == 1
+		if ldr {
+			return LDMIA{instruction}
+		} else {
+			return STMIA{instruction}
+		}
 	case instruction&LongBranchWithLinkMask == LongBranchWithLinkFormat:
 		return LBL{instruction}
 	case instruction&AddOffsetToStackPointerMask == AddOffsetToStackPointerFormat:
@@ -80,7 +86,6 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 		} else {
 			return STRH{instruction}
 		}
-		return nil
 	case instruction&SPRelativeLoadStoreMask == SPRelativeLoadStoreFormat:
 		// Bit 11 == 1 for LDRPC, 0 for STRPC
 		ldr := instruction&(1<<11)>>11 == 1
@@ -90,7 +95,13 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 			return STRSP{instruction}
 		}
 	case instruction&LoadAddressMask == LoadAddressFormat:
-		return matchLoadAddress(instruction)
+		// Bit 11 = 1 for SP, 0 for PC
+		sp := instruction&(1<<11)>>11 == 1
+		if sp {
+			return ADDSP{instruction}
+		} else {
+			return ADDPC{instruction}
+		}
 	case instruction&LoadStoreWithImmediateOffsetMask == LoadStoreWithImmediateOffsetFormat:
 		// Bit 12 == 1 for LDRImmB, 0 for LDRImmW
 		isByte := instruction&(1<<12)>>12 == 1
@@ -109,11 +120,22 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 				return STRWImm{instruction}
 			}
 		}
-		return nil
 	case instruction&LoadStoreWithRegisterOffsetMask == LoadStoreWithRegisterOffsetFormat:
 		return matchLoadStoreWithRegisterOffset(instruction)
 	case instruction&LoadStoreSignExtendedByteHalfwordMask == LoadStoreSignExtendedByteHalfwordFormat:
-		return matchLoadStoreSignExtendedByteHalfword(instruction)
+		// Bit 11 == 1 for h flag
+		h := instruction&(1<<11)>>11 == 1
+		// Bit 10 == 1 for sign extended, 0 for not
+		isSignExtended := instruction&(1<<10)>>10 == 1
+		if !isSignExtended && !h {
+			return STRNSH{instruction}
+		} else if !isSignExtended && h {
+			return LDRNSH{instruction}
+		} else if isSignExtended && !h {
+			return LDSB{instruction}
+		} else {
+			return LDSH{instruction}
+		}
 	case instruction&PCRelativeLoadMask == PCRelativeLoadFormat:
 		return LDR{instruction}
 	case instruction&HiRegisterOperationsOrBranchExchangeMask == HiRegisterOperationsOrBranchExchangeFormat:
@@ -212,16 +234,6 @@ func matchSoftwareInterrupt(instruction uint16) isa.Instruction {
 	return nil
 }
 
-func matchMultipleLoadStore(instruction uint16) isa.Instruction {
-	fmt.Println("MultipleLoadStore")
-	return nil
-}
-
-func matchLoadAddress(instruction uint16) isa.Instruction {
-	fmt.Println("LoadAddress")
-	return nil
-}
-
 func matchLoadStoreWithRegisterOffset(instruction uint16) isa.Instruction {
 	// Bit 11 is the L bit, which determines whether this is a load or store
 	load := instruction&(1<<11)>>11 == 1
@@ -230,9 +242,4 @@ func matchLoadStoreWithRegisterOffset(instruction uint16) isa.Instruction {
 	} else {
 		return STRR{instruction}
 	}
-}
-
-func matchLoadStoreSignExtendedByteHalfword(instruction uint16) isa.Instruction {
-	fmt.Println("LoadStoreSignExtendedByteHalfword")
-	return nil
 }

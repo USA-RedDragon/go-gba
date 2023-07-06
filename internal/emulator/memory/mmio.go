@@ -53,15 +53,27 @@ func (h *MMIO) checkWritable(addr uint32) bool {
 }
 
 // findMMIO finds the MMIO device index that contains the given address
-func (h *MMIO) findMMIOIndex(addr uint32) (int, error) {
+func (h *MMIO) findMMIOIndex(addr *uint32) (int, error) {
 	// account for memory mirroring
 	// 0x03007FFF - 0x03FFFFFF should map repeatedly to 0x03000000 - 0x03007FFF
-	if addr >= 0x03007FFF && addr < 0x04000000 {
-		mod := addr % 0x8000
-		addr = 0x03000000 + mod
+	if *addr >= 0x03007FFF && *addr < 0x04000000 {
+		mod := *addr % 0x8000
+		*addr = 0x03000000 + mod
+	}
+	// 0x0A000000 - 0x0BFFFFFF should map to 0x08000000 - 0x09FFFFFF
+	if *addr >= 0x0A000000 && *addr < 0x0C000000 {
+		mod := *addr % 0x2000000
+		fmt.Printf("MMIO address 0x%08x mapped to 0x%08x\n", *addr, 0x08000000+mod)
+		*addr = 0x08000000 + mod
+	}
+	// 0x0C000000 - 0x0DFFFFFF should map to 0x08000000 - 0x09FFFFFF
+	if *addr >= 0x0C000000 && *addr < 0x0E000000 {
+		mod := *addr % 0x2000000
+		fmt.Printf("MMIO address 0x%08x mapped to 0x%08x\n", *addr, 0x08000000+mod)
+		*addr = 0x08000000 + mod
 	}
 	for i, mmio := range h.mmios {
-		if addr >= mmio.address && addr < mmio.address+mmio.size {
+		if *addr >= mmio.address && *addr < mmio.address+mmio.size {
 			return i, nil
 		}
 	}
@@ -70,7 +82,7 @@ func (h *MMIO) findMMIOIndex(addr uint32) (int, error) {
 
 // Read8 reads a 8-bit value from the MMIO address space and returns it.
 func (h *MMIO) Read8(addr uint32) (uint8, error) {
-	index, err := h.findMMIOIndex(addr)
+	index, err := h.findMMIOIndex(&addr)
 	if err != nil {
 		return 0, err
 	}
@@ -83,10 +95,11 @@ func (h *MMIO) Read8(addr uint32) (uint8, error) {
 
 // Write8 writes a 8-bit value to the MMIO address space.
 func (h *MMIO) Write8(addr uint32, data uint8) error {
-	index, err := h.findMMIOIndex(addr)
+	index, err := h.findMMIOIndex(&addr)
 	if err != nil {
 		return err
 	}
+	fmt.Printf("MMIO write: 0x%08x 0x%02x\n", addr, data)
 	if !h.checkWritable(addr) {
 		panic("MMIO address not writable")
 		return fmt.Errorf("MMIO address %08x not writable", addr)
@@ -101,7 +114,7 @@ func (h *MMIO) Write8(addr uint32, data uint8) error {
 
 // Read16 reads a 16-bit value from the MMIO address space and returns it.
 func (h *MMIO) Read16(addr uint32) (uint16, error) {
-	index, err := h.findMMIOIndex(addr)
+	index, err := h.findMMIOIndex(&addr)
 	if err != nil {
 		return 0, err
 	}
@@ -115,14 +128,15 @@ func (h *MMIO) Read16(addr uint32) (uint16, error) {
 
 // Write16 writes a 16-bit value to the MMIO address space.
 func (h *MMIO) Write16(addr uint32, data uint16) error {
-	index, err := h.findMMIOIndex(addr)
+	index, err := h.findMMIOIndex(&addr)
 	if err != nil {
 		return err
 	}
 	if !h.checkWritable(addr) {
-		panic("MMIO address not writable")
+		panic(fmt.Errorf("MMIO address %08x not writable", addr))
 		return fmt.Errorf("MMIO address %08x not writable", addr)
 	}
+	fmt.Printf("MMIO write: 0x%08x 0x%04x\n", addr, data)
 	nonMapped := addr - h.mmios[index].address
 	if nonMapped >= h.mmios[index].size {
 		return fmt.Errorf("MMIO address %08x not found", addr)
@@ -134,7 +148,7 @@ func (h *MMIO) Write16(addr uint32, data uint16) error {
 
 // Read32 reads a 32-bit value from the MMIO address space and returns it.
 func (h *MMIO) Read32(addr uint32) (uint32, error) {
-	index, err := h.findMMIOIndex(addr)
+	index, err := h.findMMIOIndex(&addr)
 	if err != nil {
 		return 0, err
 	}
@@ -152,7 +166,7 @@ func (h *MMIO) Read32(addr uint32) (uint32, error) {
 
 // Write32 writes a 32-bit value to the MMIO address space.
 func (h *MMIO) Write32(addr uint32, data uint32) error {
-	index, err := h.findMMIOIndex(addr)
+	index, err := h.findMMIOIndex(&addr)
 	if err != nil {
 		return err
 	}
@@ -160,6 +174,7 @@ func (h *MMIO) Write32(addr uint32, data uint32) error {
 		mod := addr % 0x8000
 		addr = 0x03000000 + mod
 	}
+	fmt.Printf("MMIO write: 0x%08x 0x%08x\n", addr, data)
 	if !h.checkWritable(addr) {
 		panic("MMIO address not writable")
 		return fmt.Errorf("MMIO address %08x not writable", addr)

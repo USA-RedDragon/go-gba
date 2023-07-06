@@ -2,6 +2,7 @@ package thumb
 
 import (
 	"fmt"
+	"math/bits"
 
 	"github.com/USA-RedDragon/go-gba/internal/emulator/interfaces"
 )
@@ -21,7 +22,13 @@ func (a AND) Execute(cpu interfaces.CPU) (repipeline bool) {
 
 	fmt.Printf("and r%d, r%d\n", rd, rs)
 
-	panic("Not implemented")
+	res := cpu.ReadRegister(rd) & cpu.ReadRegister(rs)
+
+	cpu.WriteRegister(rd, res)
+
+	cpu.SetN(res&(1<<31) != 0)
+	cpu.SetZ(res == 0)
+
 	return
 }
 
@@ -40,7 +47,13 @@ func (e EOR) Execute(cpu interfaces.CPU) (repipeline bool) {
 
 	fmt.Printf("eor r%d, r%d\n", rd, rs)
 
-	panic("Not implemented")
+	res := cpu.ReadRegister(rd) ^ cpu.ReadRegister(rs)
+
+	cpu.WriteRegister(rd, res)
+
+	cpu.SetN(res&(1<<31) != 0)
+	cpu.SetZ(res == 0)
+
 	return
 }
 
@@ -154,7 +167,23 @@ func (r ROR) Execute(cpu interfaces.CPU) (repipeline bool) {
 
 	fmt.Printf("ror r%d, r%d\n", rd, rs)
 
-	panic("Not implemented")
+	// Rotate rs right by the value in rd
+	// Then set the carry flag to the last bit we rotated out of rs
+	val := cpu.ReadRegister(rs)
+	shift := cpu.ReadRegister(rd)
+
+	// Set the carry flag to the last bit we will rotate out of rs
+	carryBit := (val & (1 << (shift - 1))) >> (shift - 1)
+
+	// Rotate right by the value in rd
+	res := bits.RotateLeft32(val, -int(shift))
+
+	cpu.WriteRegister(rd, res)
+
+	cpu.SetC(carryBit == 1)
+	cpu.SetN(res&(1<<31) != 0)
+	cpu.SetZ(res == 0)
+
 	return
 }
 
@@ -218,7 +247,13 @@ func (c CMPALU) Execute(cpu interfaces.CPU) (repipeline bool) {
 
 	fmt.Printf("cmp r%d, r%d\n", rd, rs)
 
-	panic("Not implemented")
+	res := cpu.ReadRegister(rd) - cpu.ReadRegister(rs)
+
+	// Update the status registers
+	cpu.SetZ(res == 0)
+	// Set N if the result is negative
+	cpu.SetN(res&(1<<31) != 0)
+
 	return
 }
 
@@ -282,7 +317,13 @@ func (m MUL) Execute(cpu interfaces.CPU) (repipeline bool) {
 
 	fmt.Printf("mul r%d, r%d\n", rd, rs)
 
-	panic("Not implemented")
+	res := cpu.ReadRegister(rd) * cpu.ReadRegister(rs)
+	cpu.WriteRegister(rd, res)
+
+	// update the status registers
+	cpu.SetZ(res == 0)
+	cpu.SetN(res&(1<<31) != 0)
+
 	return
 }
 
@@ -373,12 +414,15 @@ func (l LSRMoveShifted) Execute(cpu interfaces.CPU) (repipeline bool) {
 
 	fmt.Printf("lsrs r%d, r%d, #0x%X\n", rd, rs, offset)
 
+	rsVal := cpu.ReadRegister(rs)
+
 	// Shift the source register right by the offset and store the result in the destination register
-	cpu.WriteRegister(rd, cpu.ReadRegister(rs)>>offset)
+	cpu.WriteRegister(rd, rsVal>>offset)
 
 	// Update the CPSR
 	cpu.SetZ(cpu.ReadRegister(rd) == 0)
 	cpu.SetN(cpu.ReadRegister(rd)&(1<<31) != 0)
+	cpu.SetC(rsVal&(1<<(offset-1)) != 0)
 	return
 }
 

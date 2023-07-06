@@ -26,6 +26,8 @@ const (
 	OAMSize = 1 * 1024
 	// PaletteRAMSize is 1KB
 	PaletteRAMSize = 1 * 1024
+	// GamePakROMSize is 32MB
+	GamePakROMSize = 0x2000000
 	SP_REG         = 13
 	LR_REG         = 14
 	PC_REG         = 15
@@ -63,13 +65,15 @@ type ARM7TDMI struct {
 
 	virtualMemory memory.MMIO
 
-	biosROM    [BIOSROMSize]byte
-	onChipRAM  [OnChipRAMSize]byte
-	onBoardRAM [OnBoardRAMSize]byte
-	ioRAM      [IORAMSize]byte
-	vRAM       [VRAMSize]byte
-	oam        [OAMSize]byte
-	paletteRAM [PaletteRAMSize]byte
+	biosROM        [BIOSROMSize]byte
+	onChipRAM      [OnChipRAMSize]byte
+	onBoardRAM     [OnBoardRAMSize]byte
+	ioRAM          [IORAMSize]byte
+	vRAM           [VRAMSize]byte
+	oam            [OAMSize]byte
+	paletteRAM     [PaletteRAMSize]byte
+	unusedBiosByte [1]byte
+	gamePakROM     [GamePakROMSize]byte
 
 	halted bool
 	exit   bool
@@ -96,8 +100,6 @@ const (
 func NewARM7TDMI(config *config.Config) *ARM7TDMI {
 	cpu := &ARM7TDMI{
 		virtualMemory: memory.MMIO{},
-		biosROM:       [BIOSROMSize]byte{},
-		onChipRAM:     [OnChipRAMSize]byte{},
 		config:        config,
 	}
 	cpu.virtualMemory.AddMMIO(cpu.biosROM[:], 0x00000000, BIOSROMSize)
@@ -107,18 +109,34 @@ func NewARM7TDMI(config *config.Config) *ARM7TDMI {
 	cpu.virtualMemory.AddMMIO(cpu.onChipRAM[:], 0x03000000, OnChipRAMSize)
 	// 0x03008000-0x03FFFFFF is unused
 	cpu.virtualMemory.AddMMIO(cpu.ioRAM[:], 0x04000000, IORAMSize)
+	cpu.virtualMemory.AddMMIO(cpu.unusedBiosByte[:], 0x04000410, 1)
 	// 0x04000400-0x04FFFFFF is unused
 	cpu.virtualMemory.AddMMIO(cpu.paletteRAM[:], 0x05000000, PaletteRAMSize)
 	cpu.virtualMemory.AddMMIO(cpu.vRAM[:], 0x06000000, VRAMSize)
 	cpu.virtualMemory.AddMMIO(cpu.oam[:], 0x07000000, OAMSize)
+	cpu.virtualMemory.AddMMIO(cpu.gamePakROM[:], 0x08000000, GamePakROMSize)
 
 	cpu.loadBIOSROM()
+	cpu.loadROM()
 	cpu.Reset()
 	return cpu
 }
 
 func (c *ARM7TDMI) RegisterMMIO(data []byte, address uint32, size uint32) {
 	c.virtualMemory.AddMMIO(data, address, size)
+}
+
+func (c *ARM7TDMI) DebugRegisters() string {
+	var ret = ""
+	ret += fmt.Sprintf(" R0: 0x%08X\t R1: 0x%08X\t R2: 0x%08X\t  R3: 0x%08X\n", c.r[0], c.r[1], c.r[2], c.r[3])
+	ret += fmt.Sprintf(" R4: 0x%08X\t R5: 0x%08X\t R6: 0x%08X\t  R7: 0x%08X\n", c.r[4], c.r[5], c.r[6], c.r[7])
+	ret += fmt.Sprintf(" R8: 0x%08X\t R9: 0x%08X\tR10: 0x%08X\t R11: 0x%08X\n", c.r[8], c.r[9], c.r[10], c.r[11])
+	ret += fmt.Sprintf("R12: 0x%08X\t SP: 0x%08X\t LR: 0x%08X\t  PC: 0x%08X\n", c.r[12], c.r[13], c.r[14], c.r[15])
+	ret += fmt.Sprintf("CPSR: %s\n", c.prettyCPSR())
+	if cpuMode(c.r[CPSR_REG]&0x1F) != systemMode && cpuMode(c.r[CPSR_REG]&0x1F) != userMode {
+		ret += fmt.Sprintf("SPSR: 0x%08X\n", c.ReadSPSR())
+	}
+	return ret
 }
 
 func (c *ARM7TDMI) loadBIOSROM() {
@@ -130,6 +148,17 @@ func (c *ARM7TDMI) loadBIOSROM() {
 		panic(fmt.Sprintf("BIOS ROM size is %d, expected %d", len(bios), BIOSROMSize))
 	}
 	copy(c.biosROM[:], bios)
+}
+
+func (c *ARM7TDMI) loadROM() {
+	rom, err := os.ReadFile(c.config.ROMPath)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to load rom: %v", err))
+	}
+	if len(rom) > GamePakROMSize {
+		panic(fmt.Sprintf("ROM size is %d, expected maximum of %d", len(rom), GamePakROMSize))
+	}
+	copy(c.gamePakROM[:], rom)
 }
 
 func (c *ARM7TDMI) Reset() {
@@ -603,14 +632,7 @@ func (c *ARM7TDMI) stepARM() {
 
 	if c.config.TraceRegisters {
 		fmt.Printf("\n\nInstruction 0x%08X\n", instruction)
-		fmt.Printf(" R0: 0x%08X\t R1: 0x%08X\t R2: 0x%08X\t  R3: 0x%08X\n", c.r[0], c.r[1], c.r[2], c.r[3])
-		fmt.Printf(" R4: 0x%08X\t R5: 0x%08X\t R6: 0x%08X\t  R7: 0x%08X\n", c.r[4], c.r[5], c.r[6], c.r[7])
-		fmt.Printf(" R8: 0x%08X\t R9: 0x%08X\tR10: 0x%08X\t R11: 0x%08X\n", c.r[8], c.r[9], c.r[10], c.r[11])
-		fmt.Printf("R12: 0x%08X\t SP: 0x%08X\t LR: 0x%08X\t  PC: 0x%08X\n", c.r[12], c.ReadSP(), c.ReadLR(), c.ReadPC())
-		fmt.Println(c.prettyCPSR())
-		if cpuMode(c.r[CPSR_REG]&0x1F) != systemMode && cpuMode(c.r[CPSR_REG]&0x1F) != userMode {
-			fmt.Printf("SPSR: 0x%08X\n", c.ReadSPSR())
-		}
+		fmt.Print(c.DebugRegisters())
 	}
 
 	// DECODE
@@ -802,14 +824,7 @@ func (c *ARM7TDMI) stepThumb() {
 
 	if c.config.TraceRegisters {
 		fmt.Printf("\n\nInstruction 0x%04X\n", instruction)
-		fmt.Printf(" R0: 0x%08X\t R1: 0x%08X\t R2: 0x%08X\t  R3: 0x%08X\n", c.r[0], c.r[1], c.r[2], c.r[3])
-		fmt.Printf(" R4: 0x%08X\t R5: 0x%08X\t R6: 0x%08X\t  R7: 0x%08X\n", c.r[4], c.r[5], c.r[6], c.r[7])
-		fmt.Printf(" R8: 0x%08X\t R9: 0x%08X\tR10: 0x%08X\t R11: 0x%08X\n", c.r[8], c.r[9], c.r[10], c.r[11])
-		fmt.Printf("R12: 0x%08X\t SP: 0x%08X\t LR: 0x%08X\t  PC: 0x%08X\n", c.r[12], c.ReadSP(), c.ReadLR(), c.ReadPC())
-		fmt.Println(c.prettyCPSR())
-		if cpuMode(c.r[CPSR_REG]&0x1F) != systemMode && cpuMode(c.r[CPSR_REG]&0x1F) != userMode {
-			fmt.Printf("SPSR: 0x%08X\n", c.ReadSPSR())
-		}
+		fmt.Print(c.DebugRegisters())
 	}
 
 	// DECODE

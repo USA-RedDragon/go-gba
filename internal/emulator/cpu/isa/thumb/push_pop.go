@@ -56,15 +56,15 @@ func (p POP) Execute(cpu interfaces.CPU) (repipeline bool) {
 
 	var popRegisters []uint8
 
-	if loadPC {
-		popRegisters = append(popRegisters, 15)
-	}
-
 	// Collect the registers to pop
 	for i := 0; i < 8; i++ {
 		if registers&(1<<i)>>i == 1 {
 			popRegisters = append(popRegisters, uint8(i))
 		}
+	}
+
+	if loadPC {
+		popRegisters = append(popRegisters, 15)
 	}
 
 	// Pop the registers

@@ -12,7 +12,36 @@ type AND struct {
 
 func (a AND) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("AND")
-	panic("Not implemented")
+
+	// If bit 25 is set, then the instruction is an immediate operation.
+	immediate := (a.instruction&(1<<25))>>25 == 1
+
+	// Rn is bits 19-16
+	rn := uint8((a.instruction & 0x000F0000) >> 16)
+	rnVal := cpu.ReadRegister(rn)
+
+	// Rd is bits 15-12
+	rd := uint8((a.instruction & 0x0000F000) >> 12)
+
+	op2 := uint32(0)
+	if immediate {
+		op2, _ = unshiftImmediate(a.instruction & 0x00000FFF)
+	} else {
+		op2, _ = unshiftRegister(a.instruction&0x00000FFF, cpu)
+	}
+
+	res := rnVal & op2
+
+	fmt.Printf("r%d = r%d [%08X] & %08X = %08X\n", rd, rn, rnVal, op2, res)
+
+	cpu.WriteRegister(rd, res)
+
+	if a.instruction&(1<<20)>>20 == 1 {
+		carry := (rnVal>>31)+(op2>>31) > (res >> 31)
+		overflow := (rnVal^op2)>>31 == 0 && (rnVal^res)>>31 == 1
+		cpu.SetConditionCodes(res, carry, overflow)
+	}
+
 	return
 }
 
@@ -63,9 +92,39 @@ type RSB struct {
 	instruction uint32
 }
 
-func (rsb RSB) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (r RSB) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("RSB")
-	panic("Not implemented")
+	// If bit 25 is set, then the instruction is an immediate operation.
+	immediate := (r.instruction&(1<<25))>>25 == 1
+
+	// Rn is bits 19-16
+	rn := uint8((r.instruction & 0x000F0000) >> 16)
+	rnVal := cpu.ReadRegister(rn)
+
+	// Rd is bits 15-12
+	rd := uint8((r.instruction & 0x0000F000) >> 12)
+
+	op2 := uint32(0)
+	if immediate {
+		op2, _ = unshiftImmediate(r.instruction & 0x00000FFF)
+	} else {
+		op2, _ = unshiftRegister(r.instruction&0x00000FFF, cpu)
+	}
+
+	// Reverse subtract op2 from Rn
+	res := op2 - rnVal
+
+	fmt.Printf("r%d = %08X - r%d [%08X] = %08X\n", rd, op2, rn, rnVal, res)
+
+	cpu.WriteRegister(rd, res)
+
+	if r.instruction&(1<<20)>>20 == 1 {
+		// Set carry flag if the subtraction would make a positive number.
+		carry := op2 >= rnVal
+		// Set overflow flag if the subtraction would overflow.
+		overflow := (op2^rnVal)>>31 == 1 && (op2^res)>>31 == 1
+		cpu.SetConditionCodes(res, carry, overflow)
+	}
 	return
 }
 
@@ -245,7 +304,30 @@ type ORR struct {
 
 func (o ORR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("ORR")
-	panic("Not implemented")
+	// If bit 25 is set, then the instruction is an immediate operation.
+	immediate := (o.instruction&(1<<25))>>25 == 1
+
+	// Rn is bits 19-16
+	rn := uint8((o.instruction & 0x000F0000) >> 16)
+	rnVal := cpu.ReadRegister(rn)
+
+	// Rd is bits 15-12
+	rd := uint8((o.instruction & 0x0000F000) >> 12)
+
+	op2 := uint32(0)
+	if immediate {
+		op2, _ = unshiftImmediate(o.instruction & 0x00000FFF)
+	} else {
+		op2, _ = unshiftRegister(o.instruction&0x00000FFF, cpu)
+	}
+
+	res := rnVal | op2
+
+	cpu.WriteRegister(rd, res)
+
+	cpu.SetN(res>>31 == 1)
+	cpu.SetZ(res == 0)
+
 	return
 }
 
