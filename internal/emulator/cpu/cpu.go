@@ -126,7 +126,7 @@ func (c *ARM7TDMI) DebugRegisters() string {
 	ret += fmt.Sprintf(" R4: 0x%08X\t R5: 0x%08X\t R6: 0x%08X\t  R7: 0x%08X\n", c.r[4], c.r[5], c.r[6], c.r[7])
 	ret += fmt.Sprintf(" R8: 0x%08X\t R9: 0x%08X\tR10: 0x%08X\t R11: 0x%08X\n", c.r[8], c.r[9], c.r[10], c.r[11])
 	ret += fmt.Sprintf("R12: 0x%08X\t SP: 0x%08X\t LR: 0x%08X\t  PC: 0x%08X\n", c.r[12], c.r[13], c.r[14], c.r[15])
-	ret += fmt.Sprintf("CPSR: %s\n", c.prettyCPSR())
+	ret += fmt.Sprintf("%s\n", c.prettyCPSR())
 	if cpuMode(c.r[CPSR_REG]&0x1F) != systemMode && cpuMode(c.r[CPSR_REG]&0x1F) != userMode {
 		ret += fmt.Sprintf("SPSR: 0x%08X\n", c.ReadSPSR())
 	}
