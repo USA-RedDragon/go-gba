@@ -8,15 +8,19 @@ import (
 )
 
 type Emulator struct {
-	config *config.Config
-	cpu    *cpu.ARM7TDMI
+	config        *config.Config
+	cpu           *cpu.ARM7TDMI
+	prevFB        []byte
+	prevFBPresent bool
 }
 
 func New(config *config.Config) *Emulator {
-	return &Emulator{
+	emu := &Emulator{
 		config: config,
 		cpu:    cpu.NewARM7TDMI(config),
 	}
+	go emu.cpu.Run()
+	return emu
 }
 
 func (e *Emulator) Update() error {
@@ -24,9 +28,22 @@ func (e *Emulator) Update() error {
 }
 
 func (e *Emulator) Draw(screen *ebiten.Image) {
-	ebitenutil.DebugPrint(screen, "Hello, World!")
-	// Get the framebuffer from the CPU
-	// Then screen.WritePixels(fb)
+	if e.cpu.PPU.FrameReady() {
+		screen.Clear()
+		fb := e.cpu.PPU.FrameBuffer()
+		screen.WritePixels(fb)
+		e.cpu.PPU.ClearFrameReady()
+		if !e.prevFBPresent {
+			e.prevFB = fb
+			e.prevFBPresent = true
+		}
+	} else {
+		screen.Clear()
+		if e.prevFBPresent {
+			screen.WritePixels(e.prevFB)
+		}
+		ebitenutil.DebugPrint(screen, e.cpu.DebugRegisters())
+	}
 }
 
 func (e *Emulator) Layout(outsideWidth, outsideHeight int) (int, int) {

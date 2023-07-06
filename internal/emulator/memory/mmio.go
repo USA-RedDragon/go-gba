@@ -77,7 +77,7 @@ func (h *MMIO) findMMIOIndex(addr *uint32) (int, error) {
 			return i, nil
 		}
 	}
-	return 0, fmt.Errorf("MMIO address %08x not found", addr)
+	return 0, fmt.Errorf("MMIO address %08x not found", *addr)
 }
 
 // Read8 reads a 8-bit value from the MMIO address space and returns it.

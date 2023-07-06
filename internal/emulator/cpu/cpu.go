@@ -9,6 +9,7 @@ import (
 	"github.com/USA-RedDragon/go-gba/internal/emulator/cpu/isa/arm"
 	"github.com/USA-RedDragon/go-gba/internal/emulator/cpu/isa/thumb"
 	"github.com/USA-RedDragon/go-gba/internal/emulator/memory"
+	"github.com/USA-RedDragon/go-gba/internal/emulator/ppu"
 )
 
 const (
@@ -20,12 +21,6 @@ const (
 	OnBoardRAMSize = 256 * 1024
 	// IORAMSize is 1KB
 	IORAMSize = 1 * 1024
-	// VRAMSize is 96KB
-	VRAMSize = 96 * 1024
-	// OAMSize is 1KB
-	OAMSize = 1 * 1024
-	// PaletteRAMSize is 1KB
-	PaletteRAMSize = 1 * 1024
 	// GamePakROMSize is 32MB
 	GamePakROMSize = 0x2000000
 	SP_REG         = 13
@@ -63,15 +58,13 @@ type ARM7TDMI struct {
 	lr_und   uint32
 	spsr_und uint32
 
-	virtualMemory memory.MMIO
+	virtualMemory *memory.MMIO
+	PPU           *ppu.PPU
 
 	biosROM        [BIOSROMSize]byte
 	onChipRAM      [OnChipRAMSize]byte
 	onBoardRAM     [OnBoardRAMSize]byte
 	ioRAM          [IORAMSize]byte
-	vRAM           [VRAMSize]byte
-	oam            [OAMSize]byte
-	paletteRAM     [PaletteRAMSize]byte
 	unusedBiosByte [1]byte
 	gamePakROM     [GamePakROMSize]byte
 
@@ -98,23 +91,22 @@ const (
 )
 
 func NewARM7TDMI(config *config.Config) *ARM7TDMI {
+	vmem := memory.MMIO{}
 	cpu := &ARM7TDMI{
-		virtualMemory: memory.MMIO{},
+		virtualMemory: &vmem,
 		config:        config,
 	}
-	cpu.virtualMemory.AddMMIO(cpu.biosROM[:], 0x00000000, BIOSROMSize)
+	cpu.PPU = ppu.NewPPU(config, &vmem)
+	vmem.AddMMIO(cpu.biosROM[:], 0x00000000, BIOSROMSize)
 	// 0x00004000-0x01FFFFFF is unused
-	cpu.virtualMemory.AddMMIO(cpu.onBoardRAM[:], 0x02000000, OnBoardRAMSize)
+	vmem.AddMMIO(cpu.onBoardRAM[:], 0x02000000, OnBoardRAMSize)
 	// 0x02040000-0x02FFFFFF is unused
-	cpu.virtualMemory.AddMMIO(cpu.onChipRAM[:], 0x03000000, OnChipRAMSize)
+	vmem.AddMMIO(cpu.onChipRAM[:], 0x03000000, OnChipRAMSize)
 	// 0x03008000-0x03FFFFFF is unused
-	cpu.virtualMemory.AddMMIO(cpu.ioRAM[:], 0x04000000, IORAMSize)
-	cpu.virtualMemory.AddMMIO(cpu.unusedBiosByte[:], 0x04000410, 1)
+	vmem.AddMMIO(cpu.ioRAM[:], 0x04000000, IORAMSize)
+	vmem.AddMMIO(cpu.unusedBiosByte[:], 0x04000410, 1)
 	// 0x04000400-0x04FFFFFF is unused
-	cpu.virtualMemory.AddMMIO(cpu.paletteRAM[:], 0x05000000, PaletteRAMSize)
-	cpu.virtualMemory.AddMMIO(cpu.vRAM[:], 0x06000000, VRAMSize)
-	cpu.virtualMemory.AddMMIO(cpu.oam[:], 0x07000000, OAMSize)
-	cpu.virtualMemory.AddMMIO(cpu.gamePakROM[:], 0x08000000, GamePakROMSize)
+	vmem.AddMMIO(cpu.gamePakROM[:], 0x08000000, GamePakROMSize)
 
 	cpu.loadBIOSROM()
 	cpu.loadROM()
@@ -540,7 +532,7 @@ func (c *ARM7TDMI) WritePC(value uint32) {
 }
 
 func (c *ARM7TDMI) GetMMIO() *memory.MMIO {
-	return &c.virtualMemory
+	return c.virtualMemory
 }
 
 func (c *ARM7TDMI) ReadCPSR() uint32 {
@@ -871,15 +863,25 @@ func (c *ARM7TDMI) Run() {
 	cycleTime := time.Second / 16777216
 	prevTime := time.Now()
 	for !c.exit {
-		if !c.halted {
-			// if c.r[CPSR_REG] bit 5 is set, the CPU is in thumb mode
-			if c.r[CPSR_REG]&(1<<5)>>5 == 0 {
-				c.stepARM()
-			} else {
-				c.stepThumb()
-			}
-		}
 
+func (c *ARM7TDMI) Step() {
+	if !c.halted {
+		// if c.r[CPSR_REG] bit 5 is set, the CPU is in thumb mode
+		if c.r[CPSR_REG]&(1<<5)>>5 == 0 {
+			c.stepARM()
+		} else {
+			c.stepThumb()
+		}
+		c.PPU.Step()
+	}
+}
+
+// Run runs the CPU at a consistent 16.78MHz
+func (c *ARM7TDMI) Run() {
+	cycleTime := time.Second / 16777216
+	prevTime := time.Now()
+	for !c.exit {
+		c.Step()
 		time.Sleep(cycleTime - time.Since(prevTime))
 		prevTime = time.Now()
 	}
