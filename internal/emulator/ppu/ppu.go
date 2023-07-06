@@ -2,6 +2,9 @@ package ppu
 
 import (
 	"fmt"
+	"image"
+
+	"golang.org/x/image/draw"
 
 	"github.com/USA-RedDragon/go-gba/internal/config"
 	"github.com/USA-RedDragon/go-gba/internal/emulator/memory"
@@ -80,7 +83,25 @@ func (p *PPU) FrameBuffer() []byte {
 			bitmap[destIndex+2] = byte(((pixel >> 10) & 0x1F) << 3)
 			bitmap[destIndex+3] = 0xFF
 		}
-		return bitmap
+
+		originalImage := image.NewRGBA(image.Rect(0, 0, 240, 160))
+		copy(originalImage.Pix, bitmap)
+
+		// Calculate the target dimensions
+		targetWidth := int(float64(240) * p.config.Scale)
+		targetHeight := int(float64(160) * p.config.Scale)
+
+		// Create a new blank image with the target dimensions
+		upscaledImage := image.NewRGBA(image.Rect(0, 0, targetWidth, targetHeight))
+
+		// Perform bicubic interpolation
+		draw.CatmullRom.Scale(upscaledImage, upscaledImage.Bounds(), originalImage, originalImage.Bounds(), draw.Src, nil)
+
+		// Convert the upscaled image to a byte array
+		upscaled := make([]byte, targetWidth*targetHeight*4)
+		copy(upscaled, upscaledImage.Pix)
+
+		return upscaled
 	case 4:
 		fmt.Println("Mode 4: Bitmap 240x160 8-bpp with 2 backgrounds")
 	case 5:
