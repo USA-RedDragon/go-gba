@@ -162,7 +162,46 @@ func matchHalfwordDataTransferRegisterOffset(instruction uint32) isa.Instruction
 
 func matchHalfwordDataTransferImmediateOffset(instruction uint32) isa.Instruction {
 	fmt.Println("Halfword Data Transfer Immediate Offset")
-	return nil
+	// Get bit 20 == 1 for load, 0 for store
+	load := (instruction & (1 << 20)) != 0
+
+	// Bit 6 is the s flag
+	s := (instruction & (1 << 6)) != 0
+
+	// Bit 5 is the h flag
+	h := (instruction & (1 << 5)) != 0
+
+	if load {
+		if s {
+			if h {
+				return LDRSH{instruction}
+			} else {
+				return LDRSB{instruction}
+			}
+		} else {
+			if h {
+				return LDRH{instruction}
+			} else {
+				// SWP instruction
+				panic("SWP instruction not implemented")
+			}
+		}
+	} else {
+		if s {
+			if h {
+				return STRSH{instruction}
+			} else {
+				return STRSB{instruction}
+			}
+		} else {
+			if h {
+				return STRH{instruction}
+			} else {
+				// SWP instruction
+				panic("SWP instruction not implemented")
+			}
+		}
+	}
 }
 
 func matchDataProcessing(instruction uint32) isa.Instruction {

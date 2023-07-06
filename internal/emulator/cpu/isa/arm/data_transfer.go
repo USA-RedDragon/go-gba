@@ -303,3 +303,189 @@ func (stm STM) Execute(cpu interfaces.CPU) (repipeline bool) {
 
 	return
 }
+
+type LDRSH struct {
+	instruction uint32
+}
+
+func (ldrsh LDRSH) Execute(cpu interfaces.CPU) (repipeline bool) {
+	// // Bit 24 == 1 means pre-indexed addressing
+	// pre := ldrsh.instruction&(1<<24)>>24 == 1
+	// // Bit 23 == 1 means the offset is added to the base register (up)
+	// up := ldrsh.instruction&(1<<23)>>23 == 1
+	// // Bit 21 == 1 means the base register is written back to
+	// writeback := ldrsh.instruction&(1<<21)>>21 == 1
+
+	// // Bits 19-16 are the base register
+	// rn := uint8((ldrsh.instruction >> 16) & 0xF)
+
+	// // Bits 15-12 are the destination register
+	// rd := uint8((ldrsh.instruction >> 12) & 0xF)
+
+	// // Bits 11-8 are the offset's high nibble
+	// offsetHigh := uint8((ldrsh.instruction >> 8) & 0xF)
+
+	// // Bits 3-0 are the offset's low nibble
+	// offsetLow := uint8(ldrsh.instruction & 0xF)
+
+	panic("LDRSH Not implemented")
+}
+
+type LDRSB struct {
+	instruction uint32
+}
+
+func (ldrsb LDRSB) Execute(cpu interfaces.CPU) (repipeline bool) {
+	// // Bit 24 == 1 means pre-indexed addressing
+	// pre := ldrsb.instruction&(1<<24)>>24 == 1
+	// // Bit 23 == 1 means the offset is added to the base register (up)
+	// up := ldrsb.instruction&(1<<23)>>23 == 1
+	// // Bit 21 == 1 means the base register is written back to
+	// writeback := ldrsb.instruction&(1<<21)>>21 == 1
+
+	// // Bits 19-16 are the base register
+	// rn := uint8((ldrsb.instruction >> 16) & 0xF)
+
+	// // Bits 15-12 are the destination register
+	// rd := uint8((ldrsb.instruction >> 12) & 0xF)
+
+	// // Bits 11-8 are the offset's high nibble
+	// offsetHigh := uint8((ldrsb.instruction >> 8) & 0xF)
+
+	// // Bits 3-0 are the offset's low nibble
+	// offsetLow := uint8(ldrsb.instruction & 0xF)
+	panic("LDRSB Not implemented")
+}
+
+type LDRH struct {
+	instruction uint32
+}
+
+func (ldrh LDRH) Execute(cpu interfaces.CPU) (repipeline bool) {
+	// // Bit 24 == 1 means pre-indexed addressing
+	// pre := ldrh.instruction&(1<<24)>>24 == 1
+	// // Bit 23 == 1 means the offset is added to the base register (up)
+	// up := ldrh.instruction&(1<<23)>>23 == 1
+	// // Bit 21 == 1 means the base register is written back to
+	// writeback := ldrh.instruction&(1<<21)>>21 == 1
+
+	// // Bits 19-16 are the base register
+	// rn := uint8((ldrh.instruction >> 16) & 0xF)
+
+	// // Bits 15-12 are the destination register
+	// rd := uint8((ldrh.instruction >> 12) & 0xF)
+
+	// // Bits 11-8 are the offset's high nibble
+	// offsetHigh := uint8((ldrh.instruction >> 8) & 0xF)
+
+	// // Bits 3-0 are the offset's low nibble
+	// offsetLow := uint8(ldrh.instruction & 0xF)
+	panic("LDRH Not implemented")
+}
+
+type STRSH struct {
+	instruction uint32
+}
+
+func (strsh STRSH) Execute(cpu interfaces.CPU) (repipeline bool) {
+	// // Bit 24 == 1 means pre-indexed addressing
+	// pre := strsh.instruction&(1<<24)>>24 == 1
+	// // Bit 23 == 1 means the offset is added to the base register (up)
+	// up := strsh.instruction&(1<<23)>>23 == 1
+	// // Bit 21 == 1 means the base register is written back to
+	// writeback := strsh.instruction&(1<<21)>>21 == 1
+
+	// // Bits 19-16 are the base register
+	// rn := uint8((strsh.instruction >> 16) & 0xF)
+
+	// // Bits 15-12 are the destination register
+	// rd := uint8((strsh.instruction >> 12) & 0xF)
+
+	// // Bits 11-8 are the offset's high nibble
+	// offsetHigh := uint8((strsh.instruction >> 8) & 0xF)
+
+	// // Bits 3-0 are the offset's low nibble
+	// offsetLow := uint8(strsh.instruction & 0xF)
+	panic("STRSH Not implemented")
+}
+
+type STRSB struct {
+	instruction uint32
+}
+
+func (strsb STRSB) Execute(cpu interfaces.CPU) (repipeline bool) {
+	// // Bit 24 == 1 means pre-indexed addressing
+	// pre := strsb.instruction&(1<<24)>>24 == 1
+	// // Bit 23 == 1 means the offset is added to the base register (up)
+	// up := strsb.instruction&(1<<23)>>23 == 1
+	// // Bit 21 == 1 means the base register is written back to
+	// writeback := strsb.instruction&(1<<21)>>21 == 1
+
+	// // Bits 19-16 are the base register
+	// rn := uint8((strsb.instruction >> 16) & 0xF)
+
+	// // Bits 15-12 are the destination register
+	// rd := uint8((strsb.instruction >> 12) & 0xF)
+
+	// // Bits 11-8 are the offset's high nibble
+	// offsetHigh := uint8((strsb.instruction >> 8) & 0xF)
+
+	// // Bits 3-0 are the offset's low nibble
+	// offsetLow := uint8(strsb.instruction & 0xF)
+	panic("STRSB Not implemented")
+}
+
+type STRH struct {
+	instruction uint32
+}
+
+func (strh STRH) Execute(cpu interfaces.CPU) (repipeline bool) {
+	// Bit 24 == 1 means pre-indexed addressing
+	pre := strh.instruction&(1<<24)>>24 == 1
+	// Bit 23 == 1 means the offset is added to the base register (up)
+	up := strh.instruction&(1<<23)>>23 == 1
+	// Bit 21 == 1 means the base register is written back to
+	writeback := strh.instruction&(1<<21)>>21 == 1
+
+	// Bits 19-16 are the base register
+	rn := uint8((strh.instruction >> 16) & 0xF)
+
+	// Bits 15-12 are the destination register
+	rd := uint8((strh.instruction >> 12) & 0xF)
+
+	// Bits 11-8 are the offset's high nibble
+	offsetHigh := uint8((strh.instruction >> 8) & 0xF)
+
+	// Bits 3-0 are the offset's low nibble
+	offsetLow := uint8(strh.instruction & 0xF)
+
+	offset := uint32(offsetHigh)<<4 | uint32(offsetLow)
+
+	address := cpu.ReadRegister(rn)
+	if pre {
+		if up {
+			address += offset
+		} else {
+			address -= offset
+		}
+	}
+
+	fmt.Printf("strh r%d, [r%d, #0x%X]\n", rd, rn, offset)
+
+	// Store unsigned halfword
+	cpu.GetMMIO().Write16(address, uint16(cpu.ReadRegister(rd)))
+
+	if !pre {
+		if up {
+			address += offset
+		} else {
+			address -= offset
+		}
+	}
+
+	if writeback {
+		cpu.WriteRegister(rn, address)
+	}
+
+	return
+}
