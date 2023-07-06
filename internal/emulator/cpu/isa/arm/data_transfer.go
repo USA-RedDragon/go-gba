@@ -362,25 +362,54 @@ type LDRH struct {
 }
 
 func (ldrh LDRH) Execute(cpu interfaces.CPU) (repipeline bool) {
-	// // Bit 24 == 1 means pre-indexed addressing
-	// pre := ldrh.instruction&(1<<24)>>24 == 1
-	// // Bit 23 == 1 means the offset is added to the base register (up)
-	// up := ldrh.instruction&(1<<23)>>23 == 1
-	// // Bit 21 == 1 means the base register is written back to
-	// writeback := ldrh.instruction&(1<<21)>>21 == 1
+	// Bit 24 == 1 means pre-indexed addressing
+	pre := ldrh.instruction&(1<<24)>>24 == 1
+	// Bit 23 == 1 means the offset is added to the base register (up)
+	up := ldrh.instruction&(1<<23)>>23 == 1
+	// Bit 21 == 1 means the base register is written back to
+	writeback := ldrh.instruction&(1<<21)>>21 == 1
 
-	// // Bits 19-16 are the base register
-	// rn := uint8((ldrh.instruction >> 16) & 0xF)
+	// Bits 19-16 are the base register
+	rn := uint8((ldrh.instruction >> 16) & 0xF)
 
-	// // Bits 15-12 are the destination register
-	// rd := uint8((ldrh.instruction >> 12) & 0xF)
+	// Bits 15-12 are the destination register
+	rd := uint8((ldrh.instruction >> 12) & 0xF)
 
-	// // Bits 11-8 are the offset's high nibble
-	// offsetHigh := uint8((ldrh.instruction >> 8) & 0xF)
+	// Bits 11-8 are the offset's high nibble
+	offsetHigh := uint8((ldrh.instruction >> 8) & 0xF)
 
-	// // Bits 3-0 are the offset's low nibble
-	// offsetLow := uint8(ldrh.instruction & 0xF)
-	panic("LDRH Not implemented")
+	// Bits 3-0 are the offset's low nibble
+	offsetLow := uint8(ldrh.instruction & 0xF)
+
+	address := cpu.ReadRegister(rn)
+	if pre {
+		if up {
+			address += uint32(offsetHigh<<4 | offsetLow)
+		} else {
+			address -= uint32(offsetHigh<<4 | offsetLow)
+		}
+	}
+
+	fmt.Printf("ldrh r%d, [r%d, #%d]\n", rd, rn, offsetHigh<<4|offsetLow)
+
+	// Load halfword from memory
+	halfword, err := cpu.GetMMIO().Read16(address)
+	if err != nil {
+		panic(err)
+	}
+
+	cpu.WriteRegister(rd, uint32(halfword))
+
+	if !pre || writeback {
+		if up {
+			address += uint32(offsetHigh<<4 | offsetLow)
+		} else {
+			address -= uint32(offsetHigh<<4 | offsetLow)
+		}
+		cpu.WriteRegister(rn, address)
+	}
+
+	return
 }
 
 type STRSH struct {
