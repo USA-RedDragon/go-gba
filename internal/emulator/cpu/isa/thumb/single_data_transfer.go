@@ -326,7 +326,7 @@ func (l LDMIA) Execute(cpu interfaces.CPU) (repipeline bool) {
 	var popRegisters []uint8
 
 	// Collect the registers to push in backwards order so that they are pushed in the correct order
-	for i := 7; i >= 0; i-- {
+	for i := 0; i < 8; i++ {
 		if registerList&(1<<i)>>i == 1 {
 			popRegisters = append(popRegisters, uint8(i))
 		}
@@ -366,7 +366,7 @@ func (s STMIA) Execute(cpu interfaces.CPU) (repipeline bool) {
 	var pushRegisters []uint8
 
 	// Collect the registers to push in backwards order so that they are pushed in the correct order
-	for i := 7; i >= 0; i-- {
+	for i := 0; i < 8; i++ {
 		if registerList&(1<<i)>>i == 1 {
 			pushRegisters = append(pushRegisters, uint8(i))
 		}
