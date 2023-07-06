@@ -110,7 +110,7 @@ func (p *PPU) FrameBuffer() []byte {
 		panic(fmt.Sprintf("Invalid display mode: %d", displayMode))
 	}
 
-	return p.vRAM[:]
+	return nil
 }
 
 func (p *PPU) Step() {

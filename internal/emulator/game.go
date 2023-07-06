@@ -24,26 +24,25 @@ func New(config *config.Config) *Emulator {
 }
 
 func (e *Emulator) Update() error {
+	if e.cpu.PPU.FrameReady() {
+		fb := e.cpu.PPU.FrameBuffer()
+		if fb != nil {
+			if !e.prevFBPresent {
+				e.prevFB = fb
+				e.prevFBPresent = true
+			}
+		}
+		e.cpu.PPU.ClearFrameReady()
+	}
 	return nil
 }
 
 func (e *Emulator) Draw(screen *ebiten.Image) {
-	if e.cpu.PPU.FrameReady() {
-		screen.Clear()
-		fb := e.cpu.PPU.FrameBuffer()
-		screen.WritePixels(fb)
-		e.cpu.PPU.ClearFrameReady()
-		if !e.prevFBPresent {
-			e.prevFB = fb
-			e.prevFBPresent = true
-		}
-	} else {
-		screen.Clear()
-		if e.prevFBPresent {
-			screen.WritePixels(e.prevFB)
-		}
-		ebitenutil.DebugPrint(screen, e.cpu.DebugRegisters())
+	screen.Clear()
+	if e.prevFBPresent {
+		screen.WritePixels(e.prevFB)
 	}
+	ebitenutil.DebugPrint(screen, e.cpu.DebugRegisters())
 }
 
 func (e *Emulator) Layout(outsideWidth, outsideHeight int) (int, int) {
