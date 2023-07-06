@@ -483,7 +483,7 @@ func (strh STRH) Execute(cpu interfaces.CPU) (repipeline bool) {
 		}
 	}
 
-	if writeback {
+	if writeback || !pre {
 		cpu.WriteRegister(rn, address)
 	}
 
