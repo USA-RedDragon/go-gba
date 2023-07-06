@@ -16,6 +16,7 @@ type Config struct {
 	TraceRegisters bool
 	Debug          bool
 	Fullscreen     bool
+	Interactive    bool
 }
 
 func loadConfigFromEnv() Config {
@@ -34,6 +35,7 @@ func loadConfigFromEnv() Config {
 		Debug:          os.Getenv("DEBUG") != "",
 		Scale:          scale,
 		Fullscreen:     os.Getenv("FULLSCREEN") != "",
+		Interactive:    os.Getenv("INTERACTIVE") != "",
 	}
 
 	return tmpConfig
@@ -74,6 +76,16 @@ func GetConfig(cmd *cobra.Command) *Config {
 		if err == nil {
 			currentConfig.Fullscreen = fullscreen
 		}
+
+		interactive, err := cmd.Flags().GetBool("interactive")
+		if err == nil {
+			currentConfig.Interactive = interactive
+			if interactive {
+				currentConfig.Debug = true
+				cmd.Flags().Set("cpu-only", "true")
+			}
+		}
+
 	}
 
 	fmt.Println(currentConfig.ToString())
@@ -88,5 +100,6 @@ func (config *Config) ToString() string {
 		"Scale: " + strconv.FormatFloat(config.Scale, 'f', 2, 64) + "\n" +
 		"TraceRegisters: " + strconv.FormatBool(config.TraceRegisters) + "\n" +
 		"Debug: " + strconv.FormatBool(config.Debug) + "\n" +
-		"Fullscreen: " + strconv.FormatBool(config.Fullscreen) + "\n"
+		"Fullscreen: " + strconv.FormatBool(config.Fullscreen) + "\n" +
+		"Interactive: " + strconv.FormatBool(config.Interactive) + "\n"
 }

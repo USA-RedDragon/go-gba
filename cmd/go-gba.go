@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/USA-RedDragon/go-gba/internal"
 	"github.com/USA-RedDragon/go-gba/internal/config"
 	"github.com/USA-RedDragon/go-gba/internal/emulator"
 	"github.com/USA-RedDragon/go-gba/internal/emulator/cpu"
@@ -28,7 +29,9 @@ func New() *cobra.Command {
 	cmd.Flags().BoolP("fullscreen", "f", false, "enable fullscreen")
 	cmd.Flags().BoolP("trace-registers", "t", false, "trace CPU registers")
 	cmd.Flags().BoolP("debug", "d", false, "enable debug logging")
+	cmd.Flags().BoolP("interactive", "i", false, "enable interactive mode, implies --cpu-only and --debug")
 	cmd.Flags().Bool("cpu-only", false, "only run the CPU (for debugging)")
+	cmd.Flags().Bool("no-gui", false, "disable the GUI (for debugging)")
 
 	return cmd
 }
@@ -38,12 +41,28 @@ func run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	if cpuOnly {
+	interactive, err := cmd.Flags().GetBool("interactive")
+	if err != nil {
+		return err
+	}
+	if interactive || cpuOnly {
+		c := cpu.NewARM7TDMI(config.GetConfig(cmd))
+		if !interactive {
+			c.Run()
+		} else {
+			c.InteractiveRun()
+		}
+		return nil
+	}
+	noGUI, err := cmd.Flags().GetBool("no-gui")
+	if err != nil {
+		return err
+	}
+	if noGUI {
 		c := cpu.NewARM7TDMI(config.GetConfig(cmd))
 		c.Run()
 		return nil
 	} else {
-
 		config := config.GetConfig(cmd)
 
 		emu := emulator.New(config)

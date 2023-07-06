@@ -858,11 +858,14 @@ func (c *ARM7TDMI) GetThumbMode() bool {
 	}
 }
 
-// Run runs the CPU at a consistent 16.78MHz
-func (c *ARM7TDMI) Run() {
-	cycleTime := time.Second / 16777216
-	prevTime := time.Now()
+// InteractiveRun runs the CPU one instruction at a time, waiting for user input
+func (c *ARM7TDMI) InteractiveRun() {
+	fmt.Printf("Interactive mode, press enter to step\n")
 	for !c.exit {
+		fmt.Scanln()
+		c.Step()
+	}
+}
 
 func (c *ARM7TDMI) Step() {
 	if !c.halted {
