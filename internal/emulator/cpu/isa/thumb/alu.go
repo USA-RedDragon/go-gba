@@ -342,7 +342,13 @@ func (b BIC) Execute(cpu interfaces.CPU) (repipeline bool) {
 
 	fmt.Printf("bic r%d, r%d\n", rd, rs)
 
-	panic("Not implemented")
+	res := cpu.ReadRegister(rd) &^ cpu.ReadRegister(rs)
+	cpu.WriteRegister(rd, res)
+
+	// update the status registers
+	cpu.SetZ(res == 0)
+	cpu.SetN(res&(1<<31) != 0)
+
 	return
 }
 
