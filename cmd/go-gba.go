@@ -24,7 +24,7 @@ func New() *cobra.Command {
 		DisableAutoGenTag: true,
 	}
 
-	cmd.Flags().StringP("bios", "b", "gba_bios.bin", "path to the GBA BIOS")
+	cmd.Flags().StringP("bios", "b", "", "path to the GBA BIOS")
 	cmd.Flags().StringP("rom", "r", "", "path to the GBA ROM")
 	cmd.Flags().BoolP("fullscreen", "f", false, "enable fullscreen")
 	cmd.Flags().BoolP("trace-registers", "t", false, "trace CPU registers")

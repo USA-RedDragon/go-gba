@@ -108,7 +108,9 @@ func NewARM7TDMI(config *config.Config) *ARM7TDMI {
 	// 0x04000400-0x04FFFFFF is unused
 	vmem.AddMMIO(cpu.gamePakROM[:], 0x08000000, GamePakROMSize)
 
-	cpu.loadBIOSROM()
+	if config.BIOSPath != "" {
+		cpu.loadBIOSROM()
+	}
 	cpu.loadROM()
 	cpu.Reset()
 	return cpu
@@ -162,10 +164,16 @@ func (c *ARM7TDMI) Reset() {
 
 	c.r[SP_REG] = 0x03007F00 // Stack pointer to the top of on-chip RAM
 
-	// IRQs disabled, FIQs disabled, ARM mode, system mode
-	c.r[CPSR_REG] = 0x1F
-
-	c.r[PC_REG] = 0x00000000
+	if c.config.BIOSPath == "" {
+		// Start at the entry point of the ROM
+		c.r[CPSR_REG] = 0x6000001F
+		c.r[PC_REG] = 0x08000000
+	} else {
+		// Start at the entry point of the BIOS
+		// IRQs disabled, FIQs disabled, ARM mode, system mode
+		c.r[CPSR_REG] = 0x1F
+		c.r[PC_REG] = 0x00000000
+	}
 
 	// Initialize the prefetch buffers
 	var err error
@@ -186,7 +194,11 @@ func (c *ARM7TDMI) Reset() {
 		panic(fmt.Sprintf("Failed to read from memory: %v", err))
 	}
 
-	c.r[PC_REG] = 0x00000004 // Reset vector
+	if c.config.BIOSPath == "" {
+		c.r[PC_REG] = 0x08000004
+	} else {
+		c.r[PC_REG] = 0x00000004 // Reset vector
+	}
 
 	if c.config.Debug {
 		fmt.Printf("Resetting CPU\n")
