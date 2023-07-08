@@ -26,8 +26,12 @@ type PPU struct {
 	oam           [OAMSize]byte
 	paletteRAM    [PaletteRAMSize]byte
 	cycle         int
+	pixelIndex    int
+	scanlineIndex uint8
 	frameReady    bool
 	config        *config.Config
+	HBlank        bool
+	VBlank        bool
 }
 
 func NewPPU(config *config.Config, mmio *memory.MMIO) *PPU {
@@ -145,21 +149,66 @@ func (p *PPU) Step() {
 	if p.cycle%4 == 0 {
 		// Grab the current pixel
 		fmt.Println("Pixel")
-	} else
-
-	// Every 308 cycles is a scanline
-	if p.cycle > 0 && p.cycle%308 == 0 {
-		// Grab the current scanline
-		fmt.Println("Scanline")
+		p.pixelIndex++
 	}
 
-	// Every 280896 cycles is a frame
-	if p.cycle > 0 && p.cycle%280896 == 0 {
+	// Every 240+68 pixelIndexes is a scanline
+	if p.pixelIndex > 240+68 {
+		// Scanline is done
+		fmt.Println("Scanline")
+		p.scanlineIndex++
+		p.pixelIndex = 0
+		p.HBlank = false
+	} else if p.pixelIndex == 240 {
+		// HBlank
+		p.HBlank = true
+	}
+
+	// Every 160+68 scanlines is a frame
+	if p.scanlineIndex > 160+68 {
 		// Frame is done
 		fmt.Println("Frame")
 		p.frameReady = true
+		p.VBlank = false
+		p.HBlank = false
+		p.scanlineIndex = 0
 		p.cycle = 0
+	} else if p.scanlineIndex == 160 {
+		// VBlank
+		p.VBlank = true
+	}
+
+	p.cycle++
+
+	p.virtualMemory.Write8(0x04000006, p.scanlineIndex)
+
+	// Set bit 0 of 04000004 to 1 if we're inside vblank
+	if p.VBlank {
+		existingVal, err := p.virtualMemory.Read8(0x04000004)
+		if err != nil {
+			panic(err)
+		}
+		p.virtualMemory.Write8(0x04000004, existingVal|0x1)
 	} else {
-		p.cycle++
+		existingVal, err := p.virtualMemory.Read8(0x04000004)
+		if err != nil {
+			panic(err)
+		}
+		p.virtualMemory.Write8(0x04000004, existingVal&0xFE)
+	}
+
+	// Set bit 1 of 04000004 to 1 if we're inside hblank
+	if p.HBlank {
+		existingVal, err := p.virtualMemory.Read8(0x04000004)
+		if err != nil {
+			panic(err)
+		}
+		p.virtualMemory.Write8(0x04000004, existingVal|0x2)
+	} else {
+		existingVal, err := p.virtualMemory.Read8(0x04000004)
+		if err != nil {
+			panic(err)
+		}
+		p.virtualMemory.Write8(0x04000004, existingVal&0xFD)
 	}
 }
