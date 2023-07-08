@@ -518,3 +518,95 @@ func (strh STRH) Execute(cpu interfaces.CPU) (repipeline bool) {
 
 	return
 }
+
+type LDRSHRegisterOffset struct {
+	instruction uint32
+}
+
+func (ldrsh LDRSHRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool) {
+	panic("LDRSHRegisterOffset Not implemented")
+}
+
+type LDRSBRegisterOffset struct {
+	instruction uint32
+}
+
+func (ldrsb LDRSBRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool) {
+	panic("LDRSBRegisterOffset Not implemented")
+}
+
+type LDRHRegisterOffset struct {
+	instruction uint32
+}
+
+func (ldrh LDRHRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool) {
+	panic("LDRHRegisterOffset Not implemented")
+}
+
+type STRSHRegisterOffset struct {
+	instruction uint32
+}
+
+func (strsh STRSHRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool) {
+	panic("STRSHRegisterOffset Not implemented")
+}
+
+type STRSBRegisterOffset struct {
+	instruction uint32
+}
+
+func (strsb STRSBRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool) {
+	panic("STRSBRegisterOffset Not implemented")
+}
+
+type STRHRegisterOffset struct {
+	instruction uint32
+}
+
+func (strh STRHRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool) {
+	// Bit 24 == 1 means pre-indexed addressing
+	pre := strh.instruction&(1<<24)>>24 == 1
+	// Bit 23 == 1 means the offset is added to the base register (up)
+	up := strh.instruction&(1<<23)>>23 == 1
+	// Bit 21 == 1 means the base register is written back to
+	writeback := strh.instruction&(1<<21)>>21 == 1
+
+	// Bits 19-16 are the base register
+	rn := uint8((strh.instruction >> 16) & 0xF)
+
+	// Bits 15-12 are the destination register
+	rd := uint8((strh.instruction >> 12) & 0xF)
+
+	// Bits 3-0 are the offset register
+	rm := uint8(strh.instruction & 0xF)
+
+	offset := cpu.ReadRegister(rm)
+
+	address := cpu.ReadRegister(rn)
+	if pre {
+		if up {
+			address += offset
+		} else {
+			address -= offset
+		}
+	}
+
+	fmt.Printf("strh r%d, [r%d, r%d]  # 0x%08x\n", rd, rn, rm, address)
+
+	// Store unsigned halfword
+	cpu.GetMMIO().Write16(address, uint16(cpu.ReadRegister(rd)))
+
+	if !pre {
+		if up {
+			address += offset
+		} else {
+			address -= offset
+		}
+	}
+
+	if writeback || !pre {
+		cpu.WriteRegister(rn, address)
+	}
+
+	return
+}

@@ -85,7 +85,13 @@ func DecodeInstruction(instruction uint32) isa.Instruction {
 	case instruction&SingleDataSwapMask == SingleDataSwapFormat:
 		return matchSingleDataSwap(instruction)
 	case instruction&MultiplyMask == MultiplyFormat:
-		return matchMultiply(instruction)
+		// Bit 21 == 1 for multiple and accumulate, 0 for multiply
+		accumulate := (instruction & (1 << 21)) != 0
+		if accumulate {
+			return MLA{instruction}
+		} else {
+			return MUL{instruction}
+		}
 	case instruction&MultiplyLongMask == MultiplyLongFormat:
 		return matchMultiplyLong(instruction)
 	case instruction&HalfwordDataTransferRegisterOffsetMask == HalfwordDataTransferRegisterOffsetFormat:
@@ -145,19 +151,52 @@ func matchSingleDataSwap(instruction uint32) isa.Instruction {
 	return nil
 }
 
-func matchMultiply(instruction uint32) isa.Instruction {
-	fmt.Println("Multiply")
-	return nil
-}
-
 func matchMultiplyLong(instruction uint32) isa.Instruction {
 	fmt.Println("Multiply Long")
 	return nil
 }
 
 func matchHalfwordDataTransferRegisterOffset(instruction uint32) isa.Instruction {
-	fmt.Println("Halfword Data Transfer Register Offset")
-	return nil
+	// Get bit 20 == 1 for load, 0 for store
+	load := (instruction & (1 << 20)) != 0
+
+	// Bit 6 is the s flag
+	s := (instruction & (1 << 6)) != 0
+
+	// Bit 5 is the h flag
+	h := (instruction & (1 << 5)) != 0
+
+	if load {
+		if s {
+			if h {
+				return LDRSHRegisterOffset{instruction}
+			} else {
+				return LDRSBRegisterOffset{instruction}
+			}
+		} else {
+			if h {
+				return LDRHRegisterOffset{instruction}
+			} else {
+				// SWP instruction
+				panic("SWP instruction not implemented")
+			}
+		}
+	} else {
+		if s {
+			if h {
+				return STRSHRegisterOffset{instruction}
+			} else {
+				return STRSBRegisterOffset{instruction}
+			}
+		} else {
+			if h {
+				return STRHRegisterOffset{instruction}
+			} else {
+				// SWP instruction
+				panic("SWP instruction not implemented")
+			}
+		}
+	}
 }
 
 func matchHalfwordDataTransferImmediateOffset(instruction uint32) isa.Instruction {
