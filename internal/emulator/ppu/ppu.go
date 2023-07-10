@@ -49,6 +49,23 @@ func NewPPU(config *config.Config, mmio *memory.MMIO) *PPU {
 	return ppu
 }
 
+// DumpVRAM returns a string representation of the VRAM
+func (p *PPU) DumpVRAM() string {
+	// The output should look like this:
+	// 0x06000000: 0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+	var output string
+	for i := 0; i < VRAMSize; i += 16 {
+		output += fmt.Sprintf("0x%08X: ", 0x06000000+i)
+		for j := 0; j < 16; j++ {
+			output += fmt.Sprintf("%02X ", p.vRAM[i+j])
+		}
+		output += "\n"
+	}
+
+	return output
+}
+
 func (p *PPU) FrameReady() bool {
 	return p.frameReady
 }
