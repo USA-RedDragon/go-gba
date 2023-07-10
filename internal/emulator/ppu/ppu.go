@@ -66,6 +66,8 @@ func (p *PPU) FrameBuffer() []byte {
 	// Grab bits 0-2 of dispCNT to get the display mode
 	displayMode := dispCNT & 0x7
 
+	var originalRender *image.RGBA
+
 	switch displayMode {
 	case 0:
 		fmt.Println("Mode 0: Tiled 240x160 8-bpp with 4 backgrounds")
@@ -75,46 +77,43 @@ func (p *PPU) FrameBuffer() []byte {
 		fmt.Println("Mode 2: Tiled 240x160 8-bpp with 2 backgrounds")
 	case 3:
 		fmt.Println("Mode 3: Bitmap 240x160 16-bpp with 1 background")
-		// Convert vram contents from 16-bit pixels to 8-bit pixels (RGBA)
-		// RGBA bitmap
-		bitmap := make([]byte, NUM_PIXELS*4)
-		for i := 0; i < NUM_PIXELS*2; i += 2 {
-			pixel := uint16(p.vRAM[i+1])<<8 | uint16(p.vRAM[i])
-			// Convert XBGR1555 to 32-bit RGBA
-			destIndex := i * 2
-			bitmap[destIndex] = byte((pixel & 0x1F) << 3)
-			bitmap[destIndex+1] = byte(((pixel >> 5) & 0x1F) << 3)
-			bitmap[destIndex+2] = byte(((pixel >> 10) & 0x1F) << 3)
-			bitmap[destIndex+3] = 0xFF
-		}
-
-		originalImage := image.NewRGBA(image.Rect(0, 0, 240, 160))
-		copy(originalImage.Pix, bitmap)
-
-		// Calculate the target dimensions
-		targetWidth := int(float64(240) * p.config.Scale)
-		targetHeight := int(float64(160) * p.config.Scale)
-
-		// Create a new blank image with the target dimensions
-		upscaledImage := image.NewRGBA(image.Rect(0, 0, targetWidth, targetHeight))
-
-		// Perform bicubic interpolation
-		draw.CatmullRom.Scale(upscaledImage, upscaledImage.Bounds(), originalImage, originalImage.Bounds(), draw.Src, nil)
-
-		// Convert the upscaled image to a byte array
-		upscaled := make([]byte, targetWidth*targetHeight*4)
-		copy(upscaled, upscaledImage.Pix)
-
-		return upscaled
+		originalRender = p.renderMode3()
 	case 4:
 		fmt.Println("Mode 4: Bitmap 240x160 8-bpp with 2 backgrounds")
+		originalRender = p.renderMode4()
 	case 5:
 		fmt.Println("Mode 5: Bitmap 160x128 16-bpp with 2 backgrounds")
 	default:
 		panic(fmt.Sprintf("Invalid display mode: %d", displayMode))
 	}
 
-	return nil
+	if originalRender == nil {
+		return nil
+	}
+
+	upscaled := p.upscale(originalRender)
+
+	return upscaled
+}
+
+func (p *PPU) upscale(render *image.RGBA) []byte {
+	// Calculate the target dimensions
+	// We use constants here because we want the scaled
+	// image to always be a factor of 240x160
+	targetWidth := int(240 * p.config.Scale)
+	targetHeight := int(160 * p.config.Scale)
+
+	// Create a new blank image with the target dimensions
+	upscaledImage := image.NewRGBA(image.Rect(0, 0, targetWidth, targetHeight))
+
+	// Perform bicubic interpolation
+	draw.CatmullRom.Scale(upscaledImage, upscaledImage.Bounds(), render, render.Bounds(), draw.Src, nil)
+
+	// Convert the upscaled image to a byte array for the renderer
+	upscaled := make([]byte, targetWidth*targetHeight*4)
+	copy(upscaled, upscaledImage.Pix)
+
+	return upscaled
 }
 
 func (p *PPU) Step() {
