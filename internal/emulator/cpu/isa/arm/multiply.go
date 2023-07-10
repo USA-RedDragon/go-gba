@@ -40,6 +40,8 @@ func (m MLA) Execute(cpu interfaces.CPU) (repipeline bool) {
 		cpu.SetN(res>>31 == 1)
 	}
 
+	cpu.WriteRegister(rd, res)
+
 	return
 }
 
@@ -72,5 +74,8 @@ func (m MUL) Execute(cpu interfaces.CPU) (repipeline bool) {
 		cpu.SetZ(res == 0)
 		cpu.SetN(res>>31 == 1)
 	}
+
+	cpu.WriteRegister(rd, res)
+
 	return
 }
