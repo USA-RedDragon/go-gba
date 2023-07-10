@@ -754,8 +754,7 @@ func (c *ARM7TDMI) stepARM() {
 				}
 			}
 		} else {
-			fmt.Printf("Unknown instruction 0x%08X\n", instruction)
-			panic("")
+			panic(fmt.Sprintf("Unknown instruction 0x%08X\n", instruction))
 		}
 	}
 }
