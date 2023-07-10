@@ -95,6 +95,10 @@ func (h *MMIO) Read8(addr uint32) (uint8, error) {
 
 // Write8 writes a 8-bit value to the MMIO address space.
 func (h *MMIO) Write8(addr uint32, data uint8) error {
+	if addr >= 0x06000000 && addr < 0x06FFFFFF {
+		// VRAM is not byte-addressable
+		return fmt.Errorf("VRAM address %08x not byte-addressable", addr)
+	}
 	index, err := h.findMMIOIndex(&addr)
 	if err != nil {
 		return err
