@@ -77,7 +77,7 @@ func DecodeInstruction(instruction uint32) isa.Instruction {
 	case instruction&BranchMask == BranchWithLinkFormat:
 		return BL{instruction}
 	case instruction&SoftwareInterruptMask == SoftwareInterruptFormat:
-		return matchSoftwareInterrupt(instruction)
+		return SWI{instruction}
 	case instruction&UndefinedMask == UndefinedFormat:
 		return matchUndefined(instruction)
 	case instruction&SingleDataTransferMask == SingleDataTransferFormat:
@@ -120,11 +120,6 @@ func matchBlockDataTransfer(instruction uint32) isa.Instruction {
 	} else {
 		return STM{instruction}
 	}
-	return nil
-}
-
-func matchSoftwareInterrupt(instruction uint32) isa.Instruction {
-	fmt.Println("Software Interrupt")
 	return nil
 }
 
