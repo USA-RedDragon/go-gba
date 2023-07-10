@@ -45,7 +45,7 @@ func (p *PPU) renderMode4() *image.RGBA {
 		if err != nil {
 			panic(err)
 		}
-		paletteRamOffset *= 64
+		paletteRamOffset *= 2
 		destIndex := i * 4
 		// The value at the paletteRamAddr is a 16-bit color
 		// Convert XBGR1555 to 32-bit RGBA
