@@ -81,8 +81,8 @@ func (h *MMIO) findMMIOIndex(addr *uint32) (int, error) {
 		}
 		*addr = 0x08000000 + mod
 	}
-	for i, mmio := range h.mmios {
-		if *addr >= mmio.address && *addr < mmio.address+mmio.size {
+	for i := range h.mmios {
+		if *addr >= h.mmios[i].address && *addr < h.mmios[i].address+h.mmios[i].size {
 			return i, nil
 		}
 	}
