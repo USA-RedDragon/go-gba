@@ -16,9 +16,9 @@ func (m MSR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	}
 	// Bit 22 is destination
 	spsr := m.instruction&(1<<22)>>22 == 1
-	// Take bits 11-4 from the instruction
-	test := (m.instruction & 0x00000FF0) >> 4
-	if test == 0 {
+	// If bit 16 is 1, we're doing a register transfer
+	test := m.instruction & (1 << 16) >> 16
+	if test == 1 {
 		// Register contents to PSR
 		rm := uint8(m.instruction & 0x0000000F)
 		// Do the thing
@@ -34,13 +34,10 @@ func (m MSR) Execute(cpu interfaces.CPU) (repipeline bool) {
 		if immediate {
 			val, _ := unshiftImmediate(m.instruction & 0x00000FFF)
 			if spsr {
-				if cpu.GetConfig().Debug {
-					fmt.Printf("Immediate: %08X to SPSR\n", val)
-				}
+				cpu.WriteSPSR(val)
 			} else {
-				if cpu.GetConfig().Debug {
-					fmt.Printf("Immediate: %08X to CPSR\n", val)
-				}
+				// only set the top 4 flag bits
+				cpu.WriteCPSR(cpu.ReadCPSR()&0x0FFFFFFF | val&0xF0000000)
 			}
 		} else {
 			val, _ := unshiftRegister(m.instruction&0x00000FFF, cpu)

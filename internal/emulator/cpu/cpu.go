@@ -751,7 +751,7 @@ func (c *ARM7TDMI) stepARM() {
 		}
 	case 0b1010 /* GE, greater than or equal */ :
 		// If the CSPR N flag (bit 31) is equal to the CSPR V flag (bit 28), then the instruction is executed
-		if c.r[CPSR_REG]&(1<<31) != c.r[CPSR_REG]&(1<<28) {
+		if c.r[CPSR_REG]&(1<<31)>>31 != c.r[CPSR_REG]&(1<<28)>>28 {
 			if c.config.Debug {
 				fmt.Printf("Skipping instruction 0x%08X becaue of GE conditional\n", instruction)
 			}
@@ -767,7 +767,7 @@ func (c *ARM7TDMI) stepARM() {
 		}
 	case 0b1100 /* GT, greater than */ :
 		// If the CSPR Z flag (bit 30) is clear, the CSPR N flag (bit 31) is equal to the CSPR V flag (bit 28), then the instruction is executed
-		if c.r[CPSR_REG]&(1<<30) != 0 || c.r[CPSR_REG]&(1<<31) != c.r[CPSR_REG]&(1<<28) {
+		if c.r[CPSR_REG]&(1<<30)>>30 != 0 && (c.r[CPSR_REG]&(1<<31)>>31 != c.r[CPSR_REG]&(1<<28)>>28) {
 			if c.config.Debug {
 				fmt.Printf("Skipping instruction 0x%08X becaue of GT conditional\n", instruction)
 			}
@@ -775,7 +775,8 @@ func (c *ARM7TDMI) stepARM() {
 		}
 	case 0b1101 /* LE, less than or equal */ :
 		// If the CSPR Z flag (bit 30) is set, or the CSPR N flag (bit 31) is not equal to the CSPR V flag (bit 28), then the instruction is executed
-		if c.r[CPSR_REG]&(1<<30) == 0 || c.r[CPSR_REG]&(1<<31) == c.r[CPSR_REG]&(1<<28) {
+		if c.r[CPSR_REG]&(1<<30)>>30 != 1 && (c.r[CPSR_REG]&(1<<31)>>31 == c.r[CPSR_REG]&(1<<28)>>28) {
+			fmt.Println(c.prettyCPSR())
 			if c.config.Debug {
 				fmt.Printf("Skipping instruction 0x%08X becaue of LE conditional\n", instruction)
 			}
