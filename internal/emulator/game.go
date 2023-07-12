@@ -8,10 +8,8 @@ import (
 )
 
 type Emulator struct {
-	config        *config.Config
-	cpu           *cpu.ARM7TDMI
-	prevFB        []byte
-	prevFBPresent bool
+	config *config.Config
+	cpu    *cpu.ARM7TDMI
 }
 
 func New(config *config.Config) *Emulator {
@@ -19,30 +17,24 @@ func New(config *config.Config) *Emulator {
 		config: config,
 		cpu:    cpu.NewARM7TDMI(config),
 	}
-	go emu.cpu.Run()
 	return emu
 }
 
 func (e *Emulator) Update() error {
-	if e.cpu.PPU.FrameReady() {
-		fb := e.cpu.PPU.FrameBuffer()
-		e.cpu.PPU.ClearFrameReady()
-		// Print vram to stderr
-		// e.cpu.PPU.DumpVRAM()
-		// fmt.Fprint(os.Stderr, e.cpu.PPU.DumpVRAM())
-		if fb != nil {
-			if !e.prevFBPresent {
-				e.prevFB = fb
-				e.prevFBPresent = true
-			}
+	for {
+		e.cpu.Step()
+		if e.cpu.PPU.FrameReady() {
+			e.cpu.PPU.ClearFrameReady()
+			break
 		}
 	}
 	return nil
 }
 
 func (e *Emulator) Draw(screen *ebiten.Image) {
-	if e.prevFBPresent {
-		screen.WritePixels(e.prevFB)
+	fb := e.cpu.PPU.FrameBuffer()
+	if fb != nil {
+		screen.WritePixels(fb)
 	}
 	ebitenutil.DebugPrint(screen, e.cpu.DebugRegisters())
 }
