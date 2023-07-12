@@ -186,8 +186,42 @@ type ADC struct {
 }
 
 func (a ADC) Execute(cpu interfaces.CPU) (repipeline bool) {
-	fmt.Println("ADC")
-	panic("Not implemented")
+	if cpu.GetConfig().Debug {
+		fmt.Println("ADC")
+	}
+
+	immediate := (a.instruction&(1<<25))>>25 == 1
+
+	// Rn is bits 19-16
+	rn := uint8((a.instruction & 0x000F0000) >> 16)
+	rnVal := cpu.ReadRegister(rn)
+
+	// Rd is bits 15-12
+	rd := uint8((a.instruction & 0x0000F000) >> 12)
+
+	op2 := uint32(0)
+	if immediate {
+		op2, _ = unshiftImmediate(a.instruction & 0x00000FFF)
+	} else {
+		op2, _ = unshiftRegister(a.instruction&0x00000FFF, cpu)
+	}
+
+	res := rnVal + op2
+	if cpu.GetConfig().Debug {
+		fmt.Printf("r%d = r%d [%08X] + %08X = %08X\n", rd, rn, rnVal, op2, res)
+	}
+
+	if cpu.GetC() {
+		res++
+	}
+
+	cpu.WriteRegister(rd, res)
+
+	if a.instruction&(1<<20)>>20 == 1 {
+		carry := (rnVal>>31)+(op2>>31) > (res >> 31)
+		overflow := (rnVal^op2)>>31 == 0 && (rnVal^res)>>31 == 1
+		cpu.SetConditionCodes(res, carry, overflow)
+	}
 	return
 }
 
@@ -196,8 +230,45 @@ type SBC struct {
 }
 
 func (s SBC) Execute(cpu interfaces.CPU) (repipeline bool) {
-	fmt.Println("SBC")
-	panic("Not implemented")
+	if cpu.GetConfig().Debug {
+		fmt.Println("SBC")
+	}
+
+	// If bit 25 is set, then the instruction is an immediate operation.
+	immediate := (s.instruction&(1<<25))>>25 == 1
+
+	// Rn is bits 19-16
+	rn := uint8((s.instruction & 0x000F0000) >> 16)
+	rnVal := cpu.ReadRegister(rn)
+
+	op2 := uint32(0)
+	if immediate {
+		op2, _ = unshiftImmediate(s.instruction & 0x00000FFF)
+	} else {
+		op2, _ = unshiftRegister(s.instruction&0x00000FFF, cpu)
+	}
+
+	// Subtract op2 from Rn and update the condition flags, but do not store the result.
+	diff := rnVal - op2
+
+	if cpu.GetConfig().Debug {
+		fmt.Printf("sbc r%d, %d = %08X\n", rn, op2, diff)
+	}
+
+	if !cpu.GetC() {
+		diff--
+	}
+
+	cpu.WriteRegister(rn, diff)
+
+	if s.instruction&(1<<20)>>20 == 1 {
+		// Set carry flag if the subtraction would make a positive number.
+		carry := rnVal >= op2
+		// Set overflow flag if the subtraction would overflow.
+		overflow := (rnVal^op2)>>31 == 1 && (rnVal^diff)>>31 == 1
+		cpu.SetConditionCodes(diff, carry, overflow)
+	}
+
 	return
 }
 
@@ -431,6 +502,29 @@ type MVN struct {
 
 func (m MVN) Execute(cpu interfaces.CPU) (repipeline bool) {
 	fmt.Println("MVN")
-	panic("Not implemented")
+	// Destination register is bits 15-12
+	destination := uint8((m.instruction & 0x0000F000) >> 12)
+
+	// If bit 25 is set, then the instruction is an immediate operation.
+	immediate := (m.instruction&(1<<25))>>25 == 1
+
+	// 2nd operand is bits 11-0
+	val := uint32(0)
+	carry := false
+	if immediate {
+		val, carry = unshiftImmediate(m.instruction & 0x00000FFF)
+		cpu.WriteRegister(destination, ^val)
+	} else {
+		val, carry = unshiftRegister(m.instruction&0x00000FFF, cpu)
+		cpu.WriteRegister(destination, ^val)
+	}
+
+	// If bit 20 is set, then the instruction sets the condition codes.
+	if m.instruction&(1<<20)>>20 == 1 {
+		cpu.SetZ(val == 0)
+		cpu.SetN(val&(1<<31) != 0)
+		cpu.SetC(carry)
+	}
+
 	return
 }
