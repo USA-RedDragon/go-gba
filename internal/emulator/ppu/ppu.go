@@ -158,6 +158,11 @@ func (p *PPU) Step() {
 		p.pixelIndex++
 	}
 
+	newlyHBlank := false
+	newlyNotHBlank := false
+	newlyVBlank := false
+	newlyNotVBlank := false
+
 	// Every 240+68 pixelIndexes is a scanline
 	if p.pixelIndex > 240+68 {
 		// Scanline is done
@@ -165,10 +170,13 @@ func (p *PPU) Step() {
 			fmt.Println("Scanline")
 		}
 		p.scanlineIndex++
+		p.virtualMemory.Write8(0x04000006, p.scanlineIndex)
 		p.pixelIndex = 0
+		newlyNotHBlank = true
 		p.HBlank = false
 	} else if p.pixelIndex == 240 {
 		// HBlank
+		newlyHBlank = true
 		p.HBlank = true
 	}
 
@@ -181,44 +189,47 @@ func (p *PPU) Step() {
 		p.frameReady = true
 		p.VBlank = false
 		p.HBlank = false
+		newlyNotVBlank = true
+		newlyNotHBlank = true
 		p.scanlineIndex = 0
 		p.cycle = 0
 	} else if p.scanlineIndex == 160 {
 		// VBlank
 		p.VBlank = true
+		newlyVBlank = true
 	}
 
 	p.cycle++
 
-	p.virtualMemory.Write8(0x04000006, p.scanlineIndex)
-
-	// Set bit 0 of 04000004 to 1 if we're inside vblank
-	if p.VBlank {
-		existingVal, err := p.virtualMemory.Read8(0x04000004)
-		if err != nil {
-			panic(err)
-		}
-		p.virtualMemory.Write8(0x04000004, existingVal|0x1)
-	} else {
-		existingVal, err := p.virtualMemory.Read8(0x04000004)
-		if err != nil {
-			panic(err)
-		}
-		p.virtualMemory.Write8(0x04000004, existingVal&0xFE)
-	}
-
-	// Set bit 1 of 04000004 to 1 if we're inside hblank
-	if p.HBlank {
+	if newlyHBlank {
 		existingVal, err := p.virtualMemory.Read8(0x04000004)
 		if err != nil {
 			panic(err)
 		}
 		p.virtualMemory.Write8(0x04000004, existingVal|0x2)
-	} else {
+	}
+
+	if newlyNotHBlank {
 		existingVal, err := p.virtualMemory.Read8(0x04000004)
 		if err != nil {
 			panic(err)
 		}
 		p.virtualMemory.Write8(0x04000004, existingVal&0xFD)
+	}
+
+	if newlyVBlank {
+		existingVal, err := p.virtualMemory.Read8(0x04000004)
+		if err != nil {
+			panic(err)
+		}
+		p.virtualMemory.Write8(0x04000004, existingVal|0x1)
+	}
+
+	if newlyNotVBlank {
+		existingVal, err := p.virtualMemory.Read8(0x04000004)
+		if err != nil {
+			panic(err)
+		}
+		p.virtualMemory.Write8(0x04000004, existingVal&0xFE)
 	}
 }
