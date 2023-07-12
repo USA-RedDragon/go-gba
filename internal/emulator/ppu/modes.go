@@ -49,12 +49,8 @@ func (p *PPU) renderMode4() *image.RGBA {
 		destIndex := i * 4
 		// The value at the paletteRamAddr is a 16-bit color
 		// Convert XBGR1555 to 32-bit RGBA
-		var pixel uint16
-		if paletteRamOffset == 0 {
-			pixel = uint16(p.paletteRAM[1])<<8 | uint16(p.paletteRAM[0])
-		} else {
-			pixel = uint16(p.paletteRAM[int(paletteRamOffset)+1])<<8 | uint16(p.paletteRAM[int(paletteRamOffset)])
-		}
+		pixel := uint16(p.paletteRAM[int(paletteRamOffset)+1])<<8 | uint16(p.paletteRAM[int(paletteRamOffset)])
+
 		bitmap[destIndex] = byte((pixel & 0x1F) << 3)
 		bitmap[destIndex+1] = byte(((pixel >> 5) & 0x1F) << 3)
 		bitmap[destIndex+2] = byte(((pixel >> 10) & 0x1F) << 3)
