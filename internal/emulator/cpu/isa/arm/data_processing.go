@@ -78,6 +78,10 @@ func (s SUB) Execute(cpu interfaces.CPU) (repipeline bool) {
 	// Subtract op2 from Rn and update the condition flags, but do not store the result.
 	diff := rnVal - op2
 
+	fmt.Printf("sub r%d, %d = %08X\n", rn, op2, diff)
+
+	cpu.WriteRegister(rn, diff)
+
 	if s.instruction&(1<<20)>>20 == 1 {
 		// Set carry flag if the subtraction would make a positive number.
 		carry := rnVal >= op2
