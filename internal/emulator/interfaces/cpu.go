@@ -1,6 +1,9 @@
 package interfaces
 
-import "github.com/USA-RedDragon/go-gba/internal/emulator/memory"
+import (
+	"github.com/USA-RedDragon/go-gba/internal/config"
+	"github.com/USA-RedDragon/go-gba/internal/emulator/memory"
+)
 
 type CPU interface {
 	ReadRegister(reg uint8) uint32
@@ -18,6 +21,7 @@ type CPU interface {
 	ReadSPSR() uint32
 	WriteSPSR(value uint32)
 	FlushPipeline()
+	GetConfig() *config.Config
 
 	GetMMIO() *memory.MMIO
 

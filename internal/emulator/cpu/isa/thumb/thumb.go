@@ -192,7 +192,6 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 		return nil
 	case instruction&MoveCompareAddSubtractImmediateMask == MoveCompareAddSubtractImmediateFormat:
 		op := instruction & (1<<12 | 1<<11) >> 11
-		fmt.Printf("Instruction: 0x%04X\n", instruction)
 		switch op {
 		case 0:
 			return MOV{instruction}

@@ -11,7 +11,9 @@ type MSR struct {
 }
 
 func (m MSR) Execute(cpu interfaces.CPU) (repipeline bool) {
-	fmt.Println("PSR Transfer MSR")
+	if cpu.GetConfig().Debug {
+		fmt.Println("PSR Transfer MSR")
+	}
 	// Bit 22 is destination
 	spsr := m.instruction&(1<<22)>>22 == 1
 	// Take bits 11-4 from the instruction
@@ -32,17 +34,24 @@ func (m MSR) Execute(cpu interfaces.CPU) (repipeline bool) {
 		if immediate {
 			val, _ := unshiftImmediate(m.instruction & 0x00000FFF)
 			if spsr {
-				fmt.Printf("Immediate: %08X to SPSR\n", val)
-
+				if cpu.GetConfig().Debug {
+					fmt.Printf("Immediate: %08X to SPSR\n", val)
+				}
 			} else {
-				fmt.Printf("Immediate: %08X to CPSR\n", val)
+				if cpu.GetConfig().Debug {
+					fmt.Printf("Immediate: %08X to CPSR\n", val)
+				}
 			}
 		} else {
 			val, _ := unshiftRegister(m.instruction&0x00000FFF, cpu)
 			if spsr {
-				fmt.Printf("Register: r%d [%08X] to SPSR\n", m.instruction&0x00000F, val)
+				if cpu.GetConfig().Debug {
+					fmt.Printf("Register: r%d [%08X] to SPSR\n", m.instruction&0x00000F, val)
+				}
 			} else {
-				fmt.Printf("Register: r%d [%08X] to CPSR\n", m.instruction&0x00000F, val)
+				if cpu.GetConfig().Debug {
+					fmt.Printf("Register: r%d [%08X] to CPSR\n", m.instruction&0x00000F, val)
+				}
 			}
 		}
 	}
@@ -54,7 +63,9 @@ type MRS struct {
 }
 
 func (m MRS) Execute(cpu interfaces.CPU) (repipeline bool) {
-	fmt.Println("PSR Transfer MRS")
+	if cpu.GetConfig().Debug {
+		fmt.Println("PSR Transfer MRS")
+	}
 
 	// Bits 15-12 are the destination register
 	rd := uint8((m.instruction & 0x0000F000) >> 12)

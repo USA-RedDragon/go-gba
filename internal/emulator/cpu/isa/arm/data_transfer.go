@@ -22,7 +22,9 @@ func (ldr LDR) Execute(cpu interfaces.CPU) (repipeline bool) {
 
 	memory := cpu.GetMMIO()
 
-	fmt.Printf("Immediate: %t, Pre: %t, Up: %t, Word: %t, Writeback: %t\n", immediate, pre, up, word, writeback)
+	if cpu.GetConfig().Debug {
+		fmt.Printf("Immediate: %t, Pre: %t, Up: %t, Word: %t, Writeback: %t\n", immediate, pre, up, word, writeback)
+	}
 
 	offset := uint32(0)
 	if immediate {
@@ -30,7 +32,9 @@ func (ldr LDR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	} else {
 		offset, _ = unshiftRegister(ldr.instruction&0xFFF, cpu)
 	}
-	fmt.Printf("LDR r%d, [r%d, 0x%X]\n", rd, rn, offset)
+	if cpu.GetConfig().Debug {
+		fmt.Printf("LDR r%d, [r%d, 0x%X]\n", rd, rn, offset)
+	}
 
 	address := cpu.ReadRegister(rn)
 	if pre {
@@ -87,7 +91,9 @@ func (ldr LDR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	if !pre || writeback {
 		cpu.WriteRegister(rn, address)
 	}
-	fmt.Printf("Address: 0x%X\n", address)
+	if cpu.GetConfig().Debug {
+		fmt.Printf("Address: 0x%X\n", address)
+	}
 	return
 }
 
@@ -107,16 +113,18 @@ func (str STR) Execute(cpu interfaces.CPU) (repipeline bool) {
 
 	memory := cpu.GetMMIO()
 
-	fmt.Printf("Immediate: %t, Pre: %t, Up: %t, Word: %t, Writeback: %t\n", immediate, pre, up, word, writeback)
-
+	if cpu.GetConfig().Debug {
+		fmt.Printf("Immediate: %t, Pre: %t, Up: %t, Word: %t, Writeback: %t\n", immediate, pre, up, word, writeback)
+	}
 	offset := uint32(0)
 	if immediate {
 		offset = str.instruction & 0xFFF
 	} else {
 		offset, _ = unshiftRegister(str.instruction&0xFFF, cpu)
 	}
-	fmt.Printf("STR r%d, [r%d, 0x%X]\n", rd, rn, offset)
-
+	if cpu.GetConfig().Debug {
+		fmt.Printf("STR r%d, [r%d, 0x%X]\n", rd, rn, offset)
+	}
 	address := cpu.ReadRegister(rn)
 	if pre {
 		if up {
@@ -162,7 +170,9 @@ func (str STR) Execute(cpu interfaces.CPU) (repipeline bool) {
 	if !pre || writeback {
 		cpu.WriteRegister(rn, address)
 	}
-	fmt.Printf("Address: 0x%X\n", address)
+	if cpu.GetConfig().Debug {
+		fmt.Printf("Address: 0x%X\n", address)
+	}
 	return
 }
 
@@ -180,7 +190,9 @@ func (ldm LDM) Execute(cpu interfaces.CPU) (repipeline bool) {
 	// Bit 21 == 1 means the base register is written back to
 	writeback := ldm.instruction&(1<<21)>>21 == 1
 
-	fmt.Printf("Pre: %t, Up: %t, PSR: %t, Writeback: %t\n", pre, up, psr, writeback)
+	if cpu.GetConfig().Debug {
+		fmt.Printf("Pre: %t, Up: %t, PSR: %t, Writeback: %t\n", pre, up, psr, writeback)
+	}
 
 	// Bits 19-16 are the base register
 	rn := uint8((ldm.instruction >> 16) & 0xF)
@@ -223,7 +235,9 @@ func (ldm LDM) Execute(cpu interfaces.CPU) (repipeline bool) {
 			panic(err)
 		}
 		cpu.WriteRegister(register, value)
-		fmt.Printf("Pulling register r%d @ %08X\n", register, address)
+		if cpu.GetConfig().Debug {
+			fmt.Printf("Pulling register r%d @ %08X\n", register, address)
+		}
 		if !pre {
 			if up {
 				address += 4
@@ -242,7 +256,9 @@ func (ldm LDM) Execute(cpu interfaces.CPU) (repipeline bool) {
 		writebackStr = "!"
 	}
 
-	fmt.Printf("ldm r%d%s, {%v}\t # %08x\n", rn, writebackStr, registers, address)
+	if cpu.GetConfig().Debug {
+		fmt.Printf("ldm r%d%s, {%v}\t # %08x\n", rn, writebackStr, registers, address)
+	}
 	return
 }
 
@@ -251,8 +267,6 @@ type STM struct {
 }
 
 func (stm STM) Execute(cpu interfaces.CPU) (repipeline bool) {
-	fmt.Println("STM")
-
 	// Bit 24 == 1 means pre-indexed addressing
 	pre := stm.instruction&(1<<24)>>24 == 1
 	// Bit 23 == 1 means the offset is added to the base register (up)
@@ -262,7 +276,9 @@ func (stm STM) Execute(cpu interfaces.CPU) (repipeline bool) {
 	// Bit 21 == 1 means the base register is written back to
 	writeback := stm.instruction&(1<<21)>>21 == 1
 
-	fmt.Printf("Pre: %t, Up: %t, PSR: %t, Writeback: %t\n", pre, up, psr, writeback)
+	if cpu.GetConfig().Debug {
+		fmt.Printf("Pre: %t, Up: %t, PSR: %t, Writeback: %t\n", pre, up, psr, writeback)
+	}
 
 	// Bits 19-16 are the base register
 	rn := uint8((stm.instruction >> 16) & 0xF)
@@ -270,7 +286,9 @@ func (stm STM) Execute(cpu interfaces.CPU) (repipeline bool) {
 	// Bits 15-0 are the register list
 	registerList := stm.instruction & 0xFFFF
 
-	fmt.Printf("stm r%d, 0x%X\n", rn, registerList)
+	if cpu.GetConfig().Debug {
+		fmt.Printf("stm r%d, 0x%X\n", rn, registerList)
+	}
 
 	address := cpu.ReadRegister(rn)
 
@@ -313,7 +331,9 @@ func (stm STM) Execute(cpu interfaces.CPU) (repipeline bool) {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Printf("Pushing register r%d @ %08X\n", reg, address)
+		if cpu.GetConfig().Debug {
+			fmt.Printf("Pushing register r%d @ %08X\n", reg, address)
+		}
 		if !pre {
 			if up {
 				address += 4
@@ -332,7 +352,9 @@ func (stm STM) Execute(cpu interfaces.CPU) (repipeline bool) {
 		writebackStr = "!"
 	}
 
-	fmt.Printf("stm r%d%s, {%v}\t # %08x\n", rn, writebackStr, pushRegisters, address)
+	if cpu.GetConfig().Debug {
+		fmt.Printf("stm r%d%s, {%v}\t # %08x\n", rn, writebackStr, pushRegisters, address)
+	}
 
 	return
 }
@@ -423,7 +445,9 @@ func (ldrh LDRH) Execute(cpu interfaces.CPU) (repipeline bool) {
 		}
 	}
 
-	fmt.Printf("ldrh r%d, [r%d, #%d]\n", rd, rn, offsetHigh<<4|offsetLow)
+	if cpu.GetConfig().Debug {
+		fmt.Printf("ldrh r%d, [r%d, #%d]\n", rd, rn, offsetHigh<<4|offsetLow)
+	}
 
 	// Load halfword from memory
 	halfword, err := cpu.GetMMIO().Read16(address)
@@ -532,7 +556,9 @@ func (strh STRH) Execute(cpu interfaces.CPU) (repipeline bool) {
 		}
 	}
 
-	fmt.Printf("strh r%d, [r%d, #0x%X]  # 0x%08x\n", rd, rn, offset, address)
+	if cpu.GetConfig().Debug {
+		fmt.Printf("strh r%d, [r%d, #0x%X]  # 0x%08x\n", rd, rn, offset, address)
+	}
 
 	// Store unsigned halfword
 	cpu.GetMMIO().Write16(address, uint16(cpu.ReadRegister(rd)))
@@ -624,7 +650,9 @@ func (strh STRHRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool) {
 		}
 	}
 
-	fmt.Printf("strh r%d, [r%d, r%d]  # 0x%08x\n", rd, rn, rm, address)
+	if cpu.GetConfig().Debug {
+		fmt.Printf("strh r%d, [r%d, r%d]  # 0x%08x\n", rd, rn, rm, address)
+	}
 
 	// Store unsigned halfword
 	cpu.GetMMIO().Write16(address, uint16(cpu.ReadRegister(rd)))

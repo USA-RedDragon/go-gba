@@ -19,14 +19,18 @@ func (b B) Execute(cpu interfaces.CPU) (repipeline bool) {
 	offset <<= 2
 	// if bit 0 of the offset is set, we're in THUMB mode
 	if offset&0b11 != 0 {
-		fmt.Println("Setting THUMB mode")
+		if cpu.GetConfig().Debug {
+			fmt.Println("Setting THUMB mode")
+		}
 		cpu.WritePC(cpu.ReadPC() + offset - 1)
 		cpu.SetThumbMode(true)
 	} else {
 		cpu.WritePC(cpu.ReadPC() + offset)
 		cpu.SetThumbMode(false)
 	}
-	fmt.Printf("New PC 0x%X\n", cpu.ReadPC())
+	if cpu.GetConfig().Debug {
+		fmt.Printf("New PC 0x%X\n", cpu.ReadPC())
+	}
 	return
 }
 
@@ -35,7 +39,6 @@ type BL struct {
 }
 
 func (bl BL) Execute(cpu interfaces.CPU) (repipeline bool) {
-	fmt.Println("Branch With Link")
 	offset := bl.instruction & 0x00FFFFFF
 	// Sign extend the offset
 	if offset&0x00800000 != 0 {
@@ -45,15 +48,19 @@ func (bl BL) Execute(cpu interfaces.CPU) (repipeline bool) {
 	cpu.WriteLR(cpu.ReadPC() - 4)
 	// if bit 0 of the offset is set, we're in THUMB mode
 	if offset&0b11 != 0 {
-		fmt.Println("Setting THUMB mode")
+		if cpu.GetConfig().Debug {
+			fmt.Println("Setting THUMB mode")
+		}
 		cpu.WritePC(cpu.ReadPC() + offset - 1)
 		cpu.SetThumbMode(true)
 	} else {
 		cpu.WritePC(cpu.ReadPC() + offset)
 		cpu.SetThumbMode(false)
 	}
-	fmt.Printf("Branching by 0x%X\n", offset)
-	fmt.Printf("New PC 0x%X\n", cpu.ReadPC())
+	if cpu.GetConfig().Debug {
+		fmt.Printf("Branching by 0x%X\n", offset)
+		fmt.Printf("New PC 0x%X\n", cpu.ReadPC())
+	}
 	return
 }
 
@@ -62,14 +69,14 @@ type BX struct {
 }
 
 func (bx BX) Execute(cpu interfaces.CPU) (repipeline bool) {
-	fmt.Println("Branch Exchange")
-
 	// Bits 3-0 are the register to branch to
 	rm := uint8(bx.instruction & 0x0000000F)
 
 	// if bit 0 of the register is set, we're in THUMB mode
 	if cpu.ReadRegister(rm)&0b11 != 0 {
-		fmt.Println("Setting THUMB mode")
+		if cpu.GetConfig().Debug {
+			fmt.Println("Setting THUMB mode")
+		}
 		cpu.SetThumbMode(true)
 		cpu.WritePC(cpu.ReadRegister(rm) - 1)
 	} else {
@@ -77,6 +84,8 @@ func (bx BX) Execute(cpu interfaces.CPU) (repipeline bool) {
 		cpu.WritePC(cpu.ReadRegister(rm))
 	}
 
-	fmt.Printf("New PC 0x%X\n", cpu.ReadPC())
+	if cpu.GetConfig().Debug {
+		fmt.Printf("New PC 0x%X\n", cpu.ReadPC())
+	}
 	return
 }

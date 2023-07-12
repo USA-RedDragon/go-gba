@@ -142,36 +142,28 @@ func (p *PPU) Step() {
 	// Grab bits 0-2 of dispCNT to get the display mode
 	displayMode := dispCNT & 0x7
 
-	switch displayMode {
-	case 0:
-		fmt.Println("Mode 0: Tiled 240x160 8-bpp with 4 backgrounds")
-	case 1:
-		fmt.Println("Mode 1: Tiled 240x160 8-bpp with 3 backgrounds")
-	case 2:
-		fmt.Println("Mode 2: Tiled 240x160 8-bpp with 2 backgrounds")
-	case 3:
-		fmt.Println("Mode 3: Bitmap 240x160 16-bpp with 1 background")
-	case 4:
-		fmt.Println("Mode 4: Bitmap 240x160 8-bpp with 2 backgrounds")
-	case 5:
-		fmt.Println("Mode 5: Bitmap 160x128 16-bpp with 2 backgrounds")
-	default:
+	if displayMode > 5 {
 		panic(fmt.Sprintf("Invalid display mode: %d", displayMode))
 	}
 
-	fmt.Printf("Cycle: %d\n", p.cycle)
-
+	if p.config.Debug {
+		fmt.Printf("PPU Cycle: %d\n", p.cycle)
+	}
 	// Every 4 cycles is a pixel
 	if p.cycle%4 == 0 {
 		// Grab the current pixel
-		fmt.Println("Pixel")
+		if p.config.Debug {
+			fmt.Println("Pixel")
+		}
 		p.pixelIndex++
 	}
 
 	// Every 240+68 pixelIndexes is a scanline
 	if p.pixelIndex > 240+68 {
 		// Scanline is done
-		fmt.Println("Scanline")
+		if p.config.Debug {
+			fmt.Println("Scanline")
+		}
 		p.scanlineIndex++
 		p.pixelIndex = 0
 		p.HBlank = false
@@ -183,7 +175,9 @@ func (p *PPU) Step() {
 	// Every 160+68 scanlines is a frame
 	if p.scanlineIndex > 160+68 {
 		// Frame is done
-		fmt.Println("Frame")
+		if p.config.Debug {
+			fmt.Println("Frame")
+		}
 		p.frameReady = true
 		p.VBlank = false
 		p.HBlank = false

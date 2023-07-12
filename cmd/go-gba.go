@@ -135,7 +135,7 @@ func run(cmd *cobra.Command, args []string) error {
 		ebiten.SetWindowSize(int(config.Scale*240), int(config.Scale*160))
 		ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 		ebiten.SetFullscreen(config.Fullscreen)
-		ebiten.SetScreenClearedEveryFrame(false)
+		ebiten.SetScreenClearedEveryFrame(true)
 
 		if config.ROMPath != "" {
 			name := strings.TrimSuffix(filepath.Base(config.ROMPath), filepath.Ext(config.ROMPath))

@@ -12,15 +12,15 @@ type AND struct {
 }
 
 func (a AND) Execute(cpu interfaces.CPU) (repipeline bool) {
-	fmt.Println("AND")
-
 	// Bits 5-3 are the source register
 	rs := uint8(a.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
 
 	// Bits 2-0 are the destination register
 	rd := uint8(a.instruction & (1<<2 | 1<<1 | 1<<0))
 
-	fmt.Printf("and r%d, r%d\n", rd, rs)
+	if cpu.GetConfig().Debug {
+		fmt.Printf("and r%d, r%d\n", rd, rs)
+	}
 
 	res := cpu.ReadRegister(rd) & cpu.ReadRegister(rs)
 

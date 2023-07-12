@@ -11,7 +11,9 @@ type AND struct {
 }
 
 func (a AND) Execute(cpu interfaces.CPU) (repipeline bool) {
-	fmt.Println("AND")
+	if cpu.GetConfig().Debug {
+		fmt.Println("AND")
+	}
 
 	// If bit 25 is set, then the instruction is an immediate operation.
 	immediate := (a.instruction&(1<<25))>>25 == 1
@@ -32,7 +34,9 @@ func (a AND) Execute(cpu interfaces.CPU) (repipeline bool) {
 
 	res := rnVal & op2
 
-	fmt.Printf("r%d = r%d [%08X] & %08X = %08X\n", rd, rn, rnVal, op2, res)
+	if cpu.GetConfig().Debug {
+		fmt.Printf("r%d = r%d [%08X] & %08X = %08X\n", rd, rn, rnVal, op2, res)
+	}
 
 	cpu.WriteRegister(rd, res)
 
@@ -60,7 +64,6 @@ type SUB struct {
 }
 
 func (s SUB) Execute(cpu interfaces.CPU) (repipeline bool) {
-	fmt.Println("SUB")
 	// If bit 25 is set, then the instruction is an immediate operation.
 	immediate := (s.instruction&(1<<25))>>25 == 1
 
@@ -78,7 +81,9 @@ func (s SUB) Execute(cpu interfaces.CPU) (repipeline bool) {
 	// Subtract op2 from Rn and update the condition flags, but do not store the result.
 	diff := rnVal - op2
 
-	fmt.Printf("sub r%d, %d = %08X\n", rn, op2, diff)
+	if cpu.GetConfig().Debug {
+		fmt.Printf("sub r%d, %d = %08X\n", rn, op2, diff)
+	}
 
 	cpu.WriteRegister(rn, diff)
 
@@ -97,7 +102,9 @@ type RSB struct {
 }
 
 func (r RSB) Execute(cpu interfaces.CPU) (repipeline bool) {
-	fmt.Println("RSB")
+	if cpu.GetConfig().Debug {
+		fmt.Println("RSB")
+	}
 	// If bit 25 is set, then the instruction is an immediate operation.
 	immediate := (r.instruction&(1<<25))>>25 == 1
 
@@ -118,7 +125,9 @@ func (r RSB) Execute(cpu interfaces.CPU) (repipeline bool) {
 	// Reverse subtract op2 from Rn
 	res := op2 - rnVal
 
-	fmt.Printf("r%d = %08X - r%d [%08X] = %08X\n", rd, op2, rn, rnVal, res)
+	if cpu.GetConfig().Debug {
+		fmt.Printf("r%d = %08X - r%d [%08X] = %08X\n", rd, op2, rn, rnVal, res)
+	}
 
 	cpu.WriteRegister(rd, res)
 
@@ -137,7 +146,9 @@ type ADD struct {
 }
 
 func (a ADD) Execute(cpu interfaces.CPU) (repipeline bool) {
-	fmt.Println("ADD")
+	if cpu.GetConfig().Debug {
+		fmt.Println("ADD")
+	}
 
 	immediate := (a.instruction&(1<<25))>>25 == 1
 
@@ -156,7 +167,9 @@ func (a ADD) Execute(cpu interfaces.CPU) (repipeline bool) {
 	}
 
 	res := rnVal + op2
-	fmt.Printf("r%d = r%d [%08X] + %08X = %08X\n", rd, rn, rnVal, op2, res)
+	if cpu.GetConfig().Debug {
+		fmt.Printf("r%d = r%d [%08X] + %08X = %08X\n", rd, rn, rnVal, op2, res)
+	}
 
 	cpu.WriteRegister(rd, res)
 
@@ -203,8 +216,6 @@ type TST struct {
 }
 
 func (t TST) Execute(cpu interfaces.CPU) (repipeline bool) {
-	fmt.Println("TST")
-
 	// If bit 25 is set, then the instruction is an immediate operation.
 	immediate := (t.instruction&(1<<25))>>25 == 1
 
@@ -219,6 +230,10 @@ func (t TST) Execute(cpu interfaces.CPU) (repipeline bool) {
 		op2, carry = unshiftImmediate(t.instruction & 0x00000FFF)
 	} else {
 		op2, carry = unshiftRegister(t.instruction&0x00000FFF, cpu)
+	}
+
+	if cpu.GetConfig().Debug {
+		fmt.Printf("tst r%d [0x%08X] & 0x%08X = 0x%08X\n", rn, rnVal, op2, rnVal&op2)
 	}
 
 	res := rnVal & op2
@@ -263,7 +278,9 @@ type CMP struct {
 }
 
 func (c CMP) Execute(cpu interfaces.CPU) (repipeline bool) {
-	fmt.Println("CMP")
+	if cpu.GetConfig().Debug {
+		fmt.Println("CMP")
+	}
 
 	// If bit 25 is set, then the instruction is an immediate operation.
 	immediate := (c.instruction&(1<<25))>>25 == 1
@@ -307,7 +324,6 @@ type ORR struct {
 }
 
 func (o ORR) Execute(cpu interfaces.CPU) (repipeline bool) {
-	fmt.Println("ORR")
 	// If bit 25 is set, then the instruction is an immediate operation.
 	immediate := (o.instruction&(1<<25))>>25 == 1
 
@@ -323,6 +339,10 @@ func (o ORR) Execute(cpu interfaces.CPU) (repipeline bool) {
 		op2, _ = unshiftImmediate(o.instruction & 0x00000FFF)
 	} else {
 		op2, _ = unshiftRegister(o.instruction&0x00000FFF, cpu)
+	}
+
+	if cpu.GetConfig().Debug {
+		fmt.Printf("orr r%d [0x%08X] | 0x%08X = 0x%08X\n", rd, rnVal, op2, rnVal|op2)
 	}
 
 	res := rnVal | op2
@@ -371,7 +391,9 @@ type BIC struct {
 }
 
 func (b BIC) Execute(cpu interfaces.CPU) (repipeline bool) {
-	fmt.Println("BIC")
+	if cpu.GetConfig().Debug {
+		fmt.Println("BIC")
+	}
 
 	// Destination register is bits 15-12
 	rd := uint8((b.instruction & 0x0000F000) >> 12)

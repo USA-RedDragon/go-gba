@@ -111,7 +111,6 @@ func DecodeInstruction(instruction uint32) isa.Instruction {
 }
 
 func matchBlockDataTransfer(instruction uint32) isa.Instruction {
-	fmt.Println("Block Data Transfer")
 	// Get bit 20 == 1 for load, 0 for store
 	load := (instruction & (1 << 20)) != 0
 
@@ -129,7 +128,6 @@ func matchUndefined(instruction uint32) isa.Instruction {
 }
 
 func matchSingleDataTransfer(instruction uint32) isa.Instruction {
-	fmt.Println("Single Data Transfer")
 	// instruction is in little endian
 	// Get bit 20 == 1 for load, 0 for store
 	load := (instruction & (1 << 20)) != 0
@@ -195,7 +193,6 @@ func matchHalfwordDataTransferRegisterOffset(instruction uint32) isa.Instruction
 }
 
 func matchHalfwordDataTransferImmediateOffset(instruction uint32) isa.Instruction {
-	fmt.Println("Halfword Data Transfer Immediate Offset")
 	// Get bit 20 == 1 for load, 0 for store
 	load := (instruction & (1 << 20)) != 0
 
@@ -239,8 +236,6 @@ func matchHalfwordDataTransferImmediateOffset(instruction uint32) isa.Instructio
 }
 
 func matchDataProcessing(instruction uint32) isa.Instruction {
-	fmt.Println("Data Processing")
-
 	// Opcode is bits 24-21
 	opcode := (instruction & 0x01E00000) >> 21
 	switch opcode {
@@ -289,7 +284,7 @@ func unshiftImmediate(instruction uint32) (uint32, bool) {
 	imm := instruction & 0x000000FF
 	out := bits.RotateLeft32(imm, -int(rotate*2))
 
-	fmt.Printf("Not calculating carry bit for now\n")
+	// fmt.Printf("Not calculating carry bit for now\n")
 
 	return out, carry
 }
@@ -302,25 +297,33 @@ func unshiftRegister(instruction uint32, cpu interfaces.CPU) (uint32, bool) {
 	rm := uint8(instruction & 0x0000000F)
 
 	shiftAmount := uint32(0)
-	fmt.Printf("Not calculating carry bit for now\n")
+	// fmt.Printf("Not calculating carry bit for now\n")
 
 	if shift&0b0000_1001 == 1 {
 		// Bits 11-8 refer to the register, of which the bottom byte is the shift amount.
 		shiftRegister := uint8((shift & 0b1111_0000) >> 4)
 		shiftAmount = cpu.ReadRegister(shiftRegister) & 0x000000FF
-	} else if shift&0b0000_0001 == 0 {
+	} else {
 		// Bits 11-7 are the shift amount.
 		shiftAmount = (shift & 0b1111_1000) >> 3
 	}
-	switch shift & 0b0000_0110 {
+	switch (shift & 0b0000_0110) >> 1 {
 	case 0b0000_0000: // Logical shift left
+		if cpu.GetConfig().Debug {
+			fmt.Printf("lsl r%d, #%d\n", rm, shiftAmount)
+		}
 		return cpu.ReadRegister(rm) << shiftAmount, carry
 	case 0b0000_0001: // Logical shift right
+		if cpu.GetConfig().Debug {
+			fmt.Printf("lsr r%d, #%d\n", rm, shiftAmount)
+		}
 		return cpu.ReadRegister(rm) >> shiftAmount, carry
 	case 0b0000_0010: // Arithmetic shift right
 		// An arithmetic shift right (ASR) is similar to logical shift right, except that the high bits
 		// are filled with bit 31 of Rm instead of zeros
-
+		if cpu.GetConfig().Debug {
+			fmt.Printf("asr r%d, #%d\n", rm, shiftAmount)
+		}
 		carryBit := (cpu.ReadRegister(rm) & (1 << (shiftAmount - 1))) >> (shiftAmount - 1)
 
 		// Shift right by shiftAmount
@@ -335,6 +338,9 @@ func unshiftRegister(instruction uint32, cpu interfaces.CPU) (uint32, bool) {
 
 		return shifted, carryBit == 1
 	case 0b0000_0011: // Rotate right
+		if cpu.GetConfig().Debug {
+			fmt.Printf("ror r%d, #%d\n", rm, shiftAmount)
+		}
 		return bits.RotateLeft32(cpu.ReadRegister(rm), -int(shiftAmount)), carry
 	}
 

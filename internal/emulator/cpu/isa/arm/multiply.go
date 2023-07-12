@@ -26,7 +26,9 @@ func (m MLA) Execute(cpu interfaces.CPU) (repipeline bool) {
 	// Bits 3-0 are the Rn register
 	rm := uint8(m.instruction & 0x0000000F)
 
-	fmt.Printf("mla r%d, r%d, r%d, r%d\n", rd, rm, rs, rn)
+	if cpu.GetConfig().Debug {
+		fmt.Printf("mla r%d, r%d, r%d, r%d\n", rd, rm, rs, rn)
+	}
 
 	// Rd := Rm * Rs + Rn
 	rmVal := cpu.ReadRegister(rm)
@@ -62,7 +64,9 @@ func (m MUL) Execute(cpu interfaces.CPU) (repipeline bool) {
 	// Bits 3-0 are the Rn register
 	rm := uint8(m.instruction & 0x0000000F)
 
-	fmt.Printf("mul r%d, r%d, r%d\n", rd, rm, rs)
+	if cpu.GetConfig().Debug {
+		fmt.Printf("mul r%d, r%d, r%d\n", rd, rm, rs)
+	}
 
 	// Rd := Rm * Rs + Rn
 	rmVal := cpu.ReadRegister(rm)

@@ -1,6 +1,10 @@
 package memory
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/USA-RedDragon/go-gba/internal/config"
+)
 
 type mmioMapping struct {
 	address uint32
@@ -10,7 +14,8 @@ type mmioMapping struct {
 }
 
 type MMIO struct {
-	mmios []mmioMapping
+	mmios  []mmioMapping
+	Config *config.Config
 }
 
 func (h *MMIO) checkWritable(addr uint32) bool {
@@ -63,13 +68,17 @@ func (h *MMIO) findMMIOIndex(addr *uint32) (int, error) {
 	// 0x0A000000 - 0x0BFFFFFF should map to 0x08000000 - 0x09FFFFFF
 	if *addr >= 0x0A000000 && *addr < 0x0C000000 {
 		mod := *addr % 0x2000000
-		fmt.Printf("MMIO address 0x%08x mapped to 0x%08x\n", *addr, 0x08000000+mod)
+		if h.Config.Debug {
+			fmt.Printf("MMIO address 0x%08x mapped to 0x%08x\n", *addr, 0x08000000+mod)
+		}
 		*addr = 0x08000000 + mod
 	}
 	// 0x0C000000 - 0x0DFFFFFF should map to 0x08000000 - 0x09FFFFFF
 	if *addr >= 0x0C000000 && *addr < 0x0E000000 {
 		mod := *addr % 0x2000000
-		fmt.Printf("MMIO address 0x%08x mapped to 0x%08x\n", *addr, 0x08000000+mod)
+		if h.Config.Debug {
+			fmt.Printf("MMIO address 0x%08x mapped to 0x%08x\n", *addr, 0x08000000+mod)
+		}
 		*addr = 0x08000000 + mod
 	}
 	for i, mmio := range h.mmios {
@@ -103,7 +112,9 @@ func (h *MMIO) Write8(addr uint32, data uint8) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("MMIO write: 0x%08x 0x%02x\n", addr, data)
+	if h.Config.Debug {
+		fmt.Printf("MMIO write: 0x%08x 0x%02x\n", addr, data)
+	}
 	if !h.checkWritable(addr) {
 		panic("MMIO address not writable")
 		return fmt.Errorf("MMIO address %08x not writable", addr)
@@ -140,7 +151,9 @@ func (h *MMIO) Write16(addr uint32, data uint16) error {
 		panic(fmt.Errorf("MMIO address %08x not writable", addr))
 		return fmt.Errorf("MMIO address %08x not writable", addr)
 	}
-	fmt.Printf("MMIO write: 0x%08x 0x%04x\n", addr, data)
+	if h.Config.Debug {
+		fmt.Printf("MMIO write: 0x%08x 0x%04x\n", addr, data)
+	}
 	nonMapped := addr - h.mmios[index].address
 	if nonMapped >= h.mmios[index].size {
 		return fmt.Errorf("MMIO address %08x not found", addr)
@@ -178,7 +191,9 @@ func (h *MMIO) Write32(addr uint32, data uint32) error {
 		mod := addr % 0x8000
 		addr = 0x03000000 + mod
 	}
-	fmt.Printf("MMIO write: 0x%08x 0x%08x\n", addr, data)
+	if h.Config.Debug {
+		fmt.Printf("MMIO write: 0x%08x 0x%08x\n", addr, data)
+	}
 	if !h.checkWritable(addr) {
 		panic("MMIO address not writable")
 		return fmt.Errorf("MMIO address %08x not writable", addr)

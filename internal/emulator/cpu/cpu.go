@@ -91,7 +91,9 @@ const (
 )
 
 func NewARM7TDMI(config *config.Config) *ARM7TDMI {
-	vmem := memory.MMIO{}
+	vmem := memory.MMIO{
+		Config: config,
+	}
 	cpu := &ARM7TDMI{
 		virtualMemory: &vmem,
 		config:        config,
@@ -159,10 +161,13 @@ func (c *ARM7TDMI) Reset() {
 	c.halted = true
 	c.exit = false
 
-	c.lr_svc = c.r[PC_REG]
-	c.sp_svc = c.r[SP_REG]
-
 	c.r[SP_REG] = 0x03007F00 // Stack pointer to the top of on-chip RAM
+
+	c.sp_svc = c.r[SP_REG]
+	c.sp_abt = c.r[SP_REG]
+	c.sp_irq = c.r[SP_REG]
+	c.sp_und = c.r[SP_REG]
+	c.sp_fiq = c.r[SP_REG]
 
 	if c.config.BIOSPath == "" {
 		// Start at the entry point of the ROM
@@ -567,9 +572,11 @@ func (c *ARM7TDMI) fetchARM() uint32 {
 	if err != nil {
 		panic(fmt.Sprintf("Error reading instruction at 0x%08X: %v", c.r[PC_REG], err))
 	}
-	fmt.Printf("fetchARM: Prefetching arm instruction at 0x%08X\n", c.r[PC_REG])
+	if c.config.Debug {
+		fmt.Printf("fetchARM: Prefetching arm instruction at 0x%08X\n", c.r[PC_REG])
 
-	fmt.Printf("fetchARM: Prefetch: [0x%08x, 0x%08x]\n", c.prefetchARMPipeline[0], c.prefetchARMPipeline[1])
+		fmt.Printf("fetchARM: Prefetch: [0x%08x, 0x%08x]\n", c.prefetchARMPipeline[0], c.prefetchARMPipeline[1])
+	}
 
 	return instruction
 }
@@ -577,25 +584,33 @@ func (c *ARM7TDMI) fetchARM() uint32 {
 func (c *ARM7TDMI) FlushPipeline() {
 	// Flush the pipeline
 	var err error
-	fmt.Printf("FlushPipeline: Prefetching arm instruction at 0x%08X\n", c.r[PC_REG])
+	if c.config.Debug {
+		fmt.Printf("FlushPipeline: Prefetching arm instruction at 0x%08X\n", c.r[PC_REG])
+	}
 	c.prefetchARMPipeline[0], err = c.virtualMemory.Read32(c.r[PC_REG])
 	if err != nil {
 		panic(fmt.Sprintf("Error reading instruction at 0x%08X: %v", c.r[PC_REG], err))
 	}
 
-	fmt.Printf("FlushPipeline: Prefetching thumb instruction at 0x%08X\n", c.r[PC_REG])
+	if c.config.Debug {
+		fmt.Printf("FlushPipeline: Prefetching thumb instruction at 0x%08X\n", c.r[PC_REG])
+	}
 	c.prefetchThumbPipeline[0], err = c.virtualMemory.Read16(c.r[PC_REG])
 	if err != nil {
 		panic(fmt.Sprintf("Error reading instruction at 0x%08X: %v", c.r[PC_REG], err))
 	}
 
-	fmt.Printf("FlushPipeline: Prefetching arm instruction at 0x%08X\n", c.r[PC_REG]+4)
+	if c.config.Debug {
+		fmt.Printf("FlushPipeline: Prefetching arm instruction at 0x%08X\n", c.r[PC_REG]+4)
+	}
 	c.prefetchARMPipeline[1], err = c.virtualMemory.Read32(c.r[PC_REG] + 4)
 	if err != nil {
 		panic(fmt.Sprintf("Error reading instruction at 0x%08X: %v", c.r[PC_REG]+4, err))
 	}
 
-	fmt.Printf("FlushPipeline: Prefetching thumb instruction at 0x%08X\n", c.r[PC_REG]+2)
+	if c.config.Debug {
+		fmt.Printf("FlushPipeline: Prefetching thumb instruction at 0x%08X\n", c.r[PC_REG]+2)
+	}
 	c.prefetchThumbPipeline[1], err = c.virtualMemory.Read16(c.r[PC_REG] + 2)
 	if err != nil {
 		panic(fmt.Sprintf("Error reading instruction at 0x%08X: %v", c.r[PC_REG]+2, err))
@@ -607,8 +622,10 @@ func (c *ARM7TDMI) FlushPipeline() {
 		c.r[PC_REG] += 4
 	}
 
-	fmt.Printf("FlushPipeline: Prefetch: [0x%08x, 0x%08x]\n", c.prefetchARMPipeline[0], c.prefetchARMPipeline[1])
-	fmt.Printf("FlushPipeline: Prefetch: [0x%04x, 0x%04x]\n", c.prefetchThumbPipeline[0], c.prefetchThumbPipeline[1])
+	if c.config.Debug {
+		fmt.Printf("FlushPipeline: Prefetch: [0x%08x, 0x%08x]\n", c.prefetchARMPipeline[0], c.prefetchARMPipeline[1])
+		fmt.Printf("FlushPipeline: Prefetch: [0x%04x, 0x%04x]\n", c.prefetchThumbPipeline[0], c.prefetchThumbPipeline[1])
+	}
 }
 
 func (c *ARM7TDMI) fetchThumb() uint16 {
@@ -621,11 +638,15 @@ func (c *ARM7TDMI) fetchThumb() uint16 {
 	if err != nil {
 		panic(fmt.Sprintf("fetchThumb: Error reading instruction at 0x%08X: %v", c.r[PC_REG]+2, err))
 	}
-	fmt.Printf("fetchThumb: Prefetching thumb instruction at 0x%08X\n", c.r[PC_REG]+2)
+	if c.config.Debug {
+		fmt.Printf("fetchThumb: Prefetching thumb instruction at 0x%08X\n", c.r[PC_REG]+2)
+	}
 
 	c.r[PC_REG] += 2
 
-	fmt.Printf("fetchThumb: Prefetch: [0x%04x, 0x%04x]\n", c.prefetchThumbPipeline[0], c.prefetchThumbPipeline[1])
+	if c.config.Debug {
+		fmt.Printf("fetchThumb: Prefetch: [0x%04x, 0x%04x]\n", c.prefetchThumbPipeline[0], c.prefetchThumbPipeline[1])
+	}
 
 	return instruction
 }
@@ -649,85 +670,113 @@ func (c *ARM7TDMI) stepARM() {
 	case 0b0000 /* EQ, equal */ :
 		// If the CSPR Z flag (bit 30) is set, then the instruction is executed
 		if c.r[CPSR_REG]&(1<<30) == 0 {
-			fmt.Printf("Skipping instruction 0x%08X becaue of EQ conditional\n", instruction)
+			if c.config.Debug {
+				fmt.Printf("Skipping instruction 0x%08X becaue of EQ conditional\n", instruction)
+			}
 			conditionFailed = true
 		}
 	case 0b0001 /* NE, not equal */ :
 		// If the CSPR Z flag (bit 30) is clear, then the instruction is executed
 		if c.r[CPSR_REG]&(1<<30) != 0 {
-			fmt.Printf("Skipping instruction 0x%08X becaue of NE conditional\n", instruction)
+			if c.config.Debug {
+				fmt.Printf("Skipping instruction 0x%08X becaue of NE conditional\n", instruction)
+			}
 			conditionFailed = true
 		}
 	case 0b0010 /* CS, unsigned higher or same */ :
 		// If the CSPR C flag (bit 29) is set, then the instruction is executed
 		if c.r[CPSR_REG]&(1<<29) == 0 {
-			fmt.Printf("Skipping instruction 0x%08X becaue of CS conditional\n", instruction)
+			if c.config.Debug {
+				fmt.Printf("Skipping instruction 0x%08X becaue of CS conditional\n", instruction)
+			}
 			conditionFailed = true
 		}
 	case 0b0011 /* CC, unsigned lower */ :
 		// If the CSPR C flag (bit 29) is clear, then the instruction is executed
 		if c.r[CPSR_REG]&(1<<29) != 0 {
-			fmt.Printf("Skipping instruction 0x%08X becaue of CC conditional\n", instruction)
+			if c.config.Debug {
+				fmt.Printf("Skipping instruction 0x%08X becaue of CC conditional\n", instruction)
+			}
 			conditionFailed = true
 		}
 	case 0b0100 /* MI, negative */ :
 		// If the CSPR N flag (bit 31) is set, then the instruction is executed
 		if c.r[CPSR_REG]&(1<<31) == 0 {
-			fmt.Printf("Skipping instruction 0x%08X becaue of MI conditional\n", instruction)
+			if c.config.Debug {
+				fmt.Printf("Skipping instruction 0x%08X becaue of MI conditional\n", instruction)
+			}
 			conditionFailed = true
 		}
 	case 0b0101 /* PL, positive or zero */ :
 		// If the CSPR N flag (bit 31) is clear, then the instruction is executed
 		if c.r[CPSR_REG]&(1<<31) != 0 {
-			fmt.Printf("Skipping instruction 0x%08X becaue of PL conditional\n", instruction)
+			if c.config.Debug {
+				fmt.Printf("Skipping instruction 0x%08X becaue of PL conditional\n", instruction)
+			}
 			conditionFailed = true
 		}
 	case 0b0110 /* VS, overflow */ :
 		// If the CSPR V flag (bit 28) is set, then the instruction is executed
 		if c.r[CPSR_REG]&(1<<28) == 0 {
-			fmt.Printf("Skipping instruction 0x%08X becaue of VS conditional\n", instruction)
+			if c.config.Debug {
+				fmt.Printf("Skipping instruction 0x%08X becaue of VS conditional\n", instruction)
+			}
 			conditionFailed = true
 		}
 	case 0b0111 /* VC, no overflow */ :
 		// If the CSPR V flag (bit 28) is clear, then the instruction is executed
 		if c.r[CPSR_REG]&(1<<28) != 0 {
-			fmt.Printf("Skipping instruction 0x%08X becaue of VC conditional\n", instruction)
+			if c.config.Debug {
+				fmt.Printf("Skipping instruction 0x%08X becaue of VC conditional\n", instruction)
+			}
 			conditionFailed = true
 		}
 	case 0b1000 /* HI, unsigned higher */ :
 		// If the CSPR C flag (bit 29) is set and the CSPR Z flag (bit 30) is clear, then the instruction is executed
 		if c.r[CPSR_REG]&(1<<29) == 0 || c.r[CPSR_REG]&(1<<30) != 0 {
-			fmt.Printf("Skipping instruction 0x%08X becaue of HI conditional\n", instruction)
+			if c.config.Debug {
+				fmt.Printf("Skipping instruction 0x%08X becaue of HI conditional\n", instruction)
+			}
 			conditionFailed = true
 		}
 	case 0b1001 /* LS, unsigned lower or same */ :
 		// If the CSPR C flag (bit 29) is clear or the CSPR Z flag (bit 30) is set, then the instruction is executed
 		if c.r[CPSR_REG]&(1<<29) != 0 || c.r[CPSR_REG]&(1<<30) == 0 {
-			fmt.Printf("Skipping instruction 0x%08X becaue of LS conditional\n", instruction)
+			if c.config.Debug {
+				fmt.Printf("Skipping instruction 0x%08X becaue of LS conditional\n", instruction)
+			}
 			conditionFailed = true
 		}
 	case 0b1010 /* GE, greater than or equal */ :
 		// If the CSPR N flag (bit 31) is equal to the CSPR V flag (bit 28), then the instruction is executed
 		if c.r[CPSR_REG]&(1<<31) != c.r[CPSR_REG]&(1<<28) {
-			fmt.Printf("Skipping instruction 0x%08X becaue of GE conditional\n", instruction)
+			if c.config.Debug {
+				fmt.Printf("Skipping instruction 0x%08X becaue of GE conditional\n", instruction)
+			}
 			conditionFailed = true
 		}
 	case 0b1011 /* LT, less than */ :
 		// If the CSPR N flag (bit 31) is not equal to the CSPR V flag (bit 28), then the instruction is executed
 		if c.r[CPSR_REG]&(1<<31) == c.r[CPSR_REG]&(1<<28) {
-			fmt.Printf("Skipping instruction 0x%08X becaue of LT conditional\n", instruction)
+			if c.config.Debug {
+				fmt.Printf("Skipping instruction 0x%08X becaue of LT conditional\n", instruction)
+			}
 			conditionFailed = true
 		}
 	case 0b1100 /* GT, greater than */ :
 		// If the CSPR Z flag (bit 30) is clear, the CSPR N flag (bit 31) is equal to the CSPR V flag (bit 28), then the instruction is executed
 		if c.r[CPSR_REG]&(1<<30) != 0 || c.r[CPSR_REG]&(1<<31) != c.r[CPSR_REG]&(1<<28) {
-			fmt.Printf("Skipping instruction 0x%08X becaue of GT conditional\n", instruction)
+			if c.config.Debug {
+				fmt.Printf("Skipping instruction 0x%08X becaue of GT conditional\n", instruction)
+			}
 			conditionFailed = true
 		}
 	case 0b1101 /* LE, less than or equal */ :
 		// If the CSPR Z flag (bit 30) is set, or the CSPR N flag (bit 31) is not equal to the CSPR V flag (bit 28), then the instruction is executed
 		if c.r[CPSR_REG]&(1<<30) == 0 || c.r[CPSR_REG]&(1<<31) == c.r[CPSR_REG]&(1<<28) {
-			fmt.Printf("Skipping instruction 0x%08X becaue of LE conditional\n", instruction)
+			if c.config.Debug {
+				fmt.Printf("Skipping instruction 0x%08X becaue of LE conditional\n", instruction)
+			}
 			conditionFailed = true
 		}
 	case 0b1110 /* AL, always */ :
@@ -739,7 +788,9 @@ func (c *ARM7TDMI) stepARM() {
 	if !conditionFailed {
 		oldPC := c.r[PC_REG]
 
-		fmt.Printf("Executing instruction 0x%08X at 0x%08X\n", instruction, c.r[PC_REG])
+		if c.config.Debug {
+			fmt.Printf("Executing instruction 0x%08X at 0x%08X\n", instruction, c.r[PC_REG])
+		}
 		instr := arm.DecodeInstruction(instruction)
 		if instr != nil {
 			repipeline := instr.Execute(c)
@@ -819,6 +870,10 @@ func (c *ARM7TDMI) prettyCPSR() string {
 		thumbMode,
 		opMode,
 	)
+}
+
+func (c *ARM7TDMI) GetConfig() *config.Config {
+	return c.config
 }
 
 func (c *ARM7TDMI) stepThumb() {
