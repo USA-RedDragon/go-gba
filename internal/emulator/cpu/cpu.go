@@ -584,42 +584,41 @@ func (c *ARM7TDMI) fetchARM() uint32 {
 func (c *ARM7TDMI) FlushPipeline() {
 	// Flush the pipeline
 	var err error
-	if c.config.Debug {
-		fmt.Printf("FlushPipeline: Prefetching arm instruction at 0x%08X\n", c.r[PC_REG])
-	}
-	c.prefetchARMPipeline[0], err = c.virtualMemory.Read32(c.r[PC_REG])
-	if err != nil {
-		panic(fmt.Sprintf("Error reading instruction at 0x%08X: %v", c.r[PC_REG], err))
-	}
 
-	if c.config.Debug {
-		fmt.Printf("FlushPipeline: Prefetching thumb instruction at 0x%08X\n", c.r[PC_REG])
-	}
-	c.prefetchThumbPipeline[0], err = c.virtualMemory.Read16(c.r[PC_REG])
-	if err != nil {
-		panic(fmt.Sprintf("Error reading instruction at 0x%08X: %v", c.r[PC_REG], err))
-	}
+	if !c.GetThumbMode() {
+		if c.config.Debug {
+			fmt.Printf("FlushPipeline: Prefetching arm instruction at 0x%08X\n", c.r[PC_REG])
+		}
+		c.prefetchARMPipeline[0], err = c.virtualMemory.Read32(c.r[PC_REG])
+		if err != nil {
+			panic(fmt.Sprintf("Error reading instruction at 0x%08X: %v", c.r[PC_REG], err))
+		}
 
-	if c.config.Debug {
-		fmt.Printf("FlushPipeline: Prefetching arm instruction at 0x%08X\n", c.r[PC_REG]+4)
-	}
-	c.prefetchARMPipeline[1], err = c.virtualMemory.Read32(c.r[PC_REG] + 4)
-	if err != nil {
-		panic(fmt.Sprintf("Error reading instruction at 0x%08X: %v", c.r[PC_REG]+4, err))
-	}
-
-	if c.config.Debug {
-		fmt.Printf("FlushPipeline: Prefetching thumb instruction at 0x%08X\n", c.r[PC_REG]+2)
-	}
-	c.prefetchThumbPipeline[1], err = c.virtualMemory.Read16(c.r[PC_REG] + 2)
-	if err != nil {
-		panic(fmt.Sprintf("Error reading instruction at 0x%08X: %v", c.r[PC_REG]+2, err))
-	}
-
-	if c.GetThumbMode() {
-		c.r[PC_REG] += 2
-	} else {
+		if c.config.Debug {
+			fmt.Printf("FlushPipeline: Prefetching arm instruction at 0x%08X\n", c.r[PC_REG]+4)
+		}
+		c.prefetchARMPipeline[1], err = c.virtualMemory.Read32(c.r[PC_REG] + 4)
+		if err != nil {
+			panic(fmt.Sprintf("Error reading instruction at 0x%08X: %v", c.r[PC_REG]+4, err))
+		}
 		c.r[PC_REG] += 4
+	} else {
+		if c.config.Debug {
+			fmt.Printf("FlushPipeline: Prefetching thumb instruction at 0x%08X\n", c.r[PC_REG])
+		}
+		c.prefetchThumbPipeline[0], err = c.virtualMemory.Read16(c.r[PC_REG])
+		if err != nil {
+			panic(fmt.Sprintf("Error reading instruction at 0x%08X: %v", c.r[PC_REG], err))
+		}
+
+		if c.config.Debug {
+			fmt.Printf("FlushPipeline: Prefetching thumb instruction at 0x%08X\n", c.r[PC_REG]+2)
+		}
+		c.prefetchThumbPipeline[1], err = c.virtualMemory.Read16(c.r[PC_REG] + 2)
+		if err != nil {
+			panic(fmt.Sprintf("Error reading instruction at 0x%08X: %v", c.r[PC_REG]+2, err))
+		}
+		c.r[PC_REG] += 2
 	}
 
 	if c.config.Debug {
@@ -667,6 +666,9 @@ func (c *ARM7TDMI) stepARM() {
 	// c.r[CSPR_REG] has control bits I F T at bits 7-5
 	// c.r[CSPR_REG] has mode bits M4 M3 M2 M1 M0 at bits 4-0
 	switch condition {
+	case 0b1110 /* AL, always */ :
+		// The instruction is always executed
+		break
 	case 0b0000 /* EQ, equal */ :
 		// If the CSPR Z flag (bit 30) is set, then the instruction is executed
 		if c.r[CPSR_REG]&(1<<30) == 0 {
@@ -779,9 +781,6 @@ func (c *ARM7TDMI) stepARM() {
 			}
 			conditionFailed = true
 		}
-	case 0b1110 /* AL, always */ :
-		// The instruction is always executed
-		break
 	}
 
 	// EXECUTE
