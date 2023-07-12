@@ -312,8 +312,19 @@ func unshiftRegister(instruction uint32, cpu interfaces.CPU) (uint32, bool) {
 		if cpu.GetConfig().Debug {
 			fmt.Printf("lsl r%d, #%d\n", rm, shiftAmount)
 		}
+		if shiftAmount == 0 {
+			return cpu.ReadRegister(rm), cpu.GetC()
+		}
 		return cpu.ReadRegister(rm) << shiftAmount, carry
 	case 0b0000_0001: // Logical shift right
+		if shiftAmount == 0 {
+			if cpu.GetConfig().Debug {
+				fmt.Printf("lsr r%d, #32\n", rm)
+			}
+			// bit 31 of Rm is copied into the carry flag
+			carry = (cpu.ReadRegister(rm) & 0x80000000) != 0
+			return 0, carry
+		}
 		if cpu.GetConfig().Debug {
 			fmt.Printf("lsr r%d, #%d\n", rm, shiftAmount)
 		}
@@ -323,6 +334,15 @@ func unshiftRegister(instruction uint32, cpu interfaces.CPU) (uint32, bool) {
 		// are filled with bit 31 of Rm instead of zeros
 		if cpu.GetConfig().Debug {
 			fmt.Printf("asr r%d, #%d\n", rm, shiftAmount)
+		}
+		if shiftAmount == 0 {
+			// bit 31 of Rm is copied into the carry flag
+			// return all ones or all zeros depending on bit 31 of Rm
+			carry = (cpu.ReadRegister(rm) & 0x80000000) != 0
+			if carry {
+				return 0xFFFFFFFF, carry
+			}
+			return 0, carry
 		}
 		carryBit := (cpu.ReadRegister(rm) & (1 << (shiftAmount - 1))) >> (shiftAmount - 1)
 
@@ -340,6 +360,25 @@ func unshiftRegister(instruction uint32, cpu interfaces.CPU) (uint32, bool) {
 	case 0b0000_0011: // Rotate right
 		if cpu.GetConfig().Debug {
 			fmt.Printf("ror r%d, #%d\n", rm, shiftAmount)
+		}
+		if shiftAmount == 32 {
+			// Result is the same as the original value, carry flag is bit 31 of Rm
+			carry = cpu.ReadRegister(rm)&(1<<31) != 0
+			return cpu.ReadRegister(rm), carry
+		}
+		if shiftAmount == 0 {
+			// RRX
+			rmValue := cpu.ReadRegister(rm)
+			// existing carry flag becomes bit 31
+			// bit 0 of Rm is copied into the carry flag
+			carry = (rmValue & 0x00000001) != 0
+			rmValue >>= 1
+			if cpu.GetC() {
+				rmValue |= 0x80000000
+			} else {
+				rmValue &= 0x7FFFFFFF
+			}
+			return rmValue, carry
 		}
 		return bits.RotateLeft32(cpu.ReadRegister(rm), -int(shiftAmount)), carry
 	}
