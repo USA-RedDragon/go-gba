@@ -18,8 +18,16 @@ func (b B) Execute(cpu interfaces.CPU) (repipeline bool) {
 	}
 	offset <<= 2
 	// if bit 0 of the offset is set, we're in THUMB mode
-	cpu.SetThumbMode(offset&0b11 != 0)
-	cpu.WritePC(cpu.ReadPC() + offset&0xFFFFFFFC)
+	if offset&0b11 != 0 {
+		if cpu.GetConfig().Debug {
+			fmt.Println("Setting THUMB mode")
+		}
+		cpu.WritePC(cpu.ReadPC() + offset - 1)
+		cpu.SetThumbMode(true)
+	} else {
+		cpu.WritePC(cpu.ReadPC() + offset)
+		cpu.SetThumbMode(false)
+	}
 	if cpu.GetConfig().Debug {
 		fmt.Printf("New PC 0x%X\n", cpu.ReadPC())
 	}
