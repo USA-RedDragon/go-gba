@@ -26,10 +26,11 @@ func (a AND) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	rd := uint8((a.instruction & 0x0000F000) >> 12)
 
 	op2 := uint32(0)
+	carryBit := false
 	if immediate {
-		op2, _ = unshiftImmediate(a.instruction & 0x00000FFF)
+		op2, carryBit = unshiftImmediate(a.instruction & 0x00000FFF)
 	} else {
-		op2, _ = unshiftRegister(a.instruction&0x00000FFF, cpu)
+		op2, carryBit = unshiftRegister(a.instruction&0x00000FFF, cpu)
 	}
 
 	res := rnVal & op2
@@ -41,9 +42,8 @@ func (a AND) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	cpu.WriteRegister(rd, res)
 
 	if a.instruction&(1<<20)>>20 == 1 {
-		carry := (rnVal>>31)+(op2>>31) > (res >> 31)
 		overflow := (rnVal^op2)>>31 == 0 && (rnVal^res)>>31 == 1
-		cpu.SetConditionCodes(res, carry, overflow)
+		cpu.SetConditionCodes(res, carryBit, overflow)
 	}
 
 	return
@@ -296,11 +296,11 @@ func (t TST) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	rnVal := cpu.ReadRegister(rn)
 
 	op2 := uint32(0)
-	carry := false
+	carryBit := false
 	if immediate {
-		op2, carry = unshiftImmediate(t.instruction & 0x00000FFF)
+		op2, carryBit = unshiftImmediate(t.instruction & 0x00000FFF)
 	} else {
-		op2, carry = unshiftRegister(t.instruction&0x00000FFF, cpu)
+		op2, carryBit = unshiftRegister(t.instruction&0x00000FFF, cpu)
 	}
 
 	if cpu.GetConfig().Debug {
@@ -311,7 +311,7 @@ func (t TST) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	cpu.SetZ(res == 0)
 	cpu.SetN(res>>31 == 1)
-	cpu.SetC(carry)
+	cpu.SetC(carryBit)
 
 	return
 }
@@ -329,10 +329,11 @@ func (t TEQ) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	rnVal := cpu.ReadRegister(rn)
 
 	op2 := uint32(0)
+	carryBit := false
 	if immediate {
-		op2, _ = unshiftImmediate(t.instruction & 0x00000FFF)
+		op2, carryBit = unshiftImmediate(t.instruction & 0x00000FFF)
 	} else {
-		op2, _ = unshiftRegister(t.instruction&0x00000FFF, cpu)
+		op2, carryBit = unshiftRegister(t.instruction&0x00000FFF, cpu)
 	}
 
 	res := rnVal ^ op2
@@ -340,6 +341,7 @@ func (t TEQ) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	if t.instruction&(1<<20)>>20 == 1 {
 		cpu.SetZ(res == 0)
 		cpu.SetN(res&(1<<31) != 0)
+		cpu.SetC(carryBit)
 	}
 	return
 }
@@ -406,10 +408,11 @@ func (o ORR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	rd := uint8((o.instruction & 0x0000F000) >> 12)
 
 	op2 := uint32(0)
+	carryBit := false
 	if immediate {
-		op2, _ = unshiftImmediate(o.instruction & 0x00000FFF)
+		op2, carryBit = unshiftImmediate(o.instruction & 0x00000FFF)
 	} else {
-		op2, _ = unshiftRegister(o.instruction&0x00000FFF, cpu)
+		op2, carryBit = unshiftRegister(o.instruction&0x00000FFF, cpu)
 	}
 
 	if cpu.GetConfig().Debug {
@@ -422,6 +425,7 @@ func (o ORR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	cpu.SetN(res>>31 == 1)
 	cpu.SetZ(res == 0)
+	cpu.SetC(carryBit)
 
 	return
 }
@@ -439,20 +443,22 @@ func (m MOV) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	// 2nd operand is bits 11-0
 	val := uint32(0)
-	carry := false
+	carryBit := false
 	if immediate {
-		val, carry = unshiftImmediate(m.instruction & 0x00000FFF)
+		val, carryBit = unshiftImmediate(m.instruction)
 		cpu.WriteRegister(destination, val)
 	} else {
-		val, carry = unshiftRegister(m.instruction&0x00000FFF, cpu)
+		val, carryBit = unshiftRegister(m.instruction, cpu)
 		cpu.WriteRegister(destination, val)
 	}
+
+	fmt.Printf("mov r%d 0x%08X\n", destination, val)
 
 	// If bit 20 is set, then the instruction sets the condition codes.
 	if m.instruction&(1<<20)>>20 == 1 {
 		cpu.SetZ(val == 0)
 		cpu.SetN(val&(1<<31) != 0)
-		cpu.SetC(carry)
+		cpu.SetC(carryBit)
 	}
 	return
 }
@@ -474,11 +480,11 @@ func (b BIC) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	// 2nd operand is bits 11-0
 	op2 := uint32(0)
-	carry := false
+	carryBit := false
 	if immediate {
-		op2, carry = unshiftImmediate(b.instruction & 0x00000FFF)
+		op2, carryBit = unshiftImmediate(b.instruction & 0x00000FFF)
 	} else {
-		op2, carry = unshiftRegister(b.instruction&0x00000FFF, cpu)
+		op2, carryBit = unshiftRegister(b.instruction&0x00000FFF, cpu)
 	}
 
 	// Rd = Rn AND NOT Op2
@@ -490,7 +496,7 @@ func (b BIC) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	if b.instruction&(1<<20)>>20 == 1 {
 		cpu.SetZ(res == 0)
 		cpu.SetN(res&(1<<31) != 0)
-		cpu.SetC(carry)
+		cpu.SetC(carryBit)
 	}
 
 	return
@@ -510,12 +516,12 @@ func (m MVN) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	// 2nd operand is bits 11-0
 	val := uint32(0)
-	carry := false
+	carryBit := false
 	if immediate {
-		val, carry = unshiftImmediate(m.instruction & 0x00000FFF)
+		val, carryBit = unshiftImmediate(m.instruction & 0x00000FFF)
 		cpu.WriteRegister(destination, ^val)
 	} else {
-		val, carry = unshiftRegister(m.instruction&0x00000FFF, cpu)
+		val, carryBit = unshiftRegister(m.instruction&0x00000FFF, cpu)
 		cpu.WriteRegister(destination, ^val)
 	}
 
@@ -523,7 +529,7 @@ func (m MVN) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	if m.instruction&(1<<20)>>20 == 1 {
 		cpu.SetZ(val == 0)
 		cpu.SetN(val&(1<<31) != 0)
-		cpu.SetC(carry)
+		cpu.SetC(carryBit)
 	}
 
 	return
