@@ -1,17 +1,22 @@
 package emulator
 
 import (
+	"fmt"
 	"os"
+	"runtime/pprof"
+	"time"
 
 	"github.com/USA-RedDragon/go-gba/internal/config"
 	"github.com/USA-RedDragon/go-gba/internal/emulator/cpu"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 type Emulator struct {
-	config  *config.Config
-	cpu     *cpu.ARM7TDMI
-	stopped bool
+	config    *config.Config
+	cpu       *cpu.ARM7TDMI
+	stopped   bool
+	frametime int
 }
 
 func New(config *config.Config) *Emulator {
@@ -23,6 +28,7 @@ func New(config *config.Config) *Emulator {
 }
 
 func (e *Emulator) Update() error {
+	start := time.Now()
 	for {
 		if e.stopped {
 			break
@@ -30,6 +36,7 @@ func (e *Emulator) Update() error {
 		e.cpu.Step()
 		if e.cpu.PPU.FrameReady() {
 			e.cpu.PPU.ClearFrameReady()
+			e.frametime = int(time.Since(start).Milliseconds())
 			break
 		}
 	}
@@ -44,6 +51,7 @@ func (e *Emulator) Draw(screen *ebiten.Image) {
 	if fb != nil {
 		screen.WritePixels(fb)
 	}
+	ebitenutil.DebugPrint(screen, fmt.Sprintf("FPS: %0.2f\nFrame Time: %dms\nTPS: %0.2f", 1000.0/float64(e.frametime), e.frametime, ebiten.ActualTPS()))
 	// ebitenutil.DebugPrint(screen, e.cpu.DebugRegisters())
 }
 
@@ -53,6 +61,7 @@ func (e *Emulator) Layout(outsideWidth, outsideHeight int) (int, int) {
 
 func (e *Emulator) Stop() {
 	e.stopped = true
+	pprof.StopCPUProfile()
 	e.cpu.Halt()
 	os.Exit(0)
 }
