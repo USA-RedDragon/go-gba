@@ -98,7 +98,7 @@ func NewARM7TDMI(config *config.Config) *ARM7TDMI {
 		virtualMemory: &vmem,
 		config:        config,
 	}
-	cpu.PPU = ppu.NewPPU(config, &vmem)
+	cpu.PPU = ppu.NewPPU(config, &vmem, cpu.ioRAM[:])
 	vmem.AddMMIO(cpu.biosROM[:], 0x00000000, BIOSROMSize)
 	// 0x00004000-0x01FFFFFF is unused
 	vmem.AddMMIO(cpu.onBoardRAM[:], 0x02000000, OnBoardRAMSize)

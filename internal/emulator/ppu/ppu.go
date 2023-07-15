@@ -25,6 +25,7 @@ type PPU struct {
 	vRAM          [VRAMSize]byte
 	oam           [OAMSize]byte
 	paletteRAM    [PaletteRAMSize]byte
+	ioRAM         []byte
 	cycle         int
 	pixelIndex    int
 	scanlineIndex uint8
@@ -34,12 +35,13 @@ type PPU struct {
 	VBlank        bool
 }
 
-func NewPPU(config *config.Config, mmio *memory.MMIO) *PPU {
+func NewPPU(config *config.Config, mmio *memory.MMIO, ioRAM []byte) *PPU {
 	ppu := &PPU{
 		virtualMemory: mmio,
 		cycle:         0,
 		frameReady:    false,
 		config:        config,
+		ioRAM:         ioRAM,
 	}
 
 	mmio.AddMMIO(ppu.paletteRAM[:], 0x05000000, PaletteRAMSize)
@@ -75,10 +77,8 @@ func (p *PPU) ClearFrameReady() {
 }
 
 func (p *PPU) FrameBuffer() []byte {
-	dispCNT, err := p.virtualMemory.Read16(0x04000000)
-	if err != nil {
-		panic(err)
-	}
+	// Grab the first 16 bites of ioRAM
+	dispCNT := uint16(p.ioRAM[0]) | uint16(p.ioRAM[1])<<8
 
 	// Grab bits 0-2 of dispCNT to get the display mode
 	displayMode := dispCNT & 0x7
@@ -134,10 +134,7 @@ func (p *PPU) upscale(render *image.RGBA) []byte {
 }
 
 func (p *PPU) Step() {
-	dispCNT, err := p.virtualMemory.Read16(0x04000000)
-	if err != nil {
-		panic(err)
-	}
+	dispCNT := uint16(p.ioRAM[0]) | uint16(p.ioRAM[1])<<8
 
 	// Grab bits 0-2 of dispCNT to get the display mode
 	displayMode := dispCNT & 0x7
@@ -170,7 +167,7 @@ func (p *PPU) Step() {
 			fmt.Println("Scanline")
 		}
 		p.scanlineIndex++
-		p.virtualMemory.Write8(0x04000006, p.scanlineIndex)
+		p.ioRAM[0x06] = p.scanlineIndex
 		p.pixelIndex = 0
 		newlyNotHBlank = true
 		p.HBlank = false
@@ -202,34 +199,18 @@ func (p *PPU) Step() {
 	p.cycle++
 
 	if newlyHBlank {
-		existingVal, err := p.virtualMemory.Read8(0x04000004)
-		if err != nil {
-			panic(err)
-		}
-		p.virtualMemory.Write8(0x04000004, existingVal|0x2)
+		p.ioRAM[0x04] = p.ioRAM[0x04] | 0x2
 	}
 
 	if newlyNotHBlank {
-		existingVal, err := p.virtualMemory.Read8(0x04000004)
-		if err != nil {
-			panic(err)
-		}
-		p.virtualMemory.Write8(0x04000004, existingVal&0xFD)
+		p.ioRAM[0x04] = p.ioRAM[0x04] & 0xFD
 	}
 
 	if newlyVBlank {
-		existingVal, err := p.virtualMemory.Read8(0x04000004)
-		if err != nil {
-			panic(err)
-		}
-		p.virtualMemory.Write8(0x04000004, existingVal|0x1)
+		p.ioRAM[0x04] = p.ioRAM[0x04] | 0x1
 	}
 
 	if newlyNotVBlank {
-		existingVal, err := p.virtualMemory.Read8(0x04000004)
-		if err != nil {
-			panic(err)
-		}
-		p.virtualMemory.Write8(0x04000004, existingVal&0xFE)
+		p.ioRAM[0x04] = p.ioRAM[0x04] & 0xFE
 	}
 }
