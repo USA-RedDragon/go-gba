@@ -11,7 +11,7 @@ type AND struct {
 	instruction uint16
 }
 
-func (a AND) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (a AND) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bits 5-3 are the source register
 	rs := uint8(a.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
 
@@ -36,7 +36,7 @@ type EOR struct {
 	instruction uint16
 }
 
-func (e EOR) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (e EOR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("EOR")
 
 	// Bits 5-3 are the source register
@@ -61,7 +61,7 @@ type LSL struct {
 	instruction uint16
 }
 
-func (l LSL) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (l LSL) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("LSL")
 
 	// Bits 5-3 are the source register
@@ -80,7 +80,7 @@ type LSR struct {
 	instruction uint16
 }
 
-func (l LSR) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (l LSR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("LSR")
 
 	// Bits 5-3 are the source register
@@ -99,7 +99,7 @@ type ASR struct {
 	instruction uint16
 }
 
-func (a ASR) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (a ASR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("ASR")
 
 	// Bits 5-3 are the source register
@@ -118,7 +118,7 @@ type ADC struct {
 	instruction uint16
 }
 
-func (a ADC) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (a ADC) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("ADC")
 
 	// Bits 5-3 are the source register
@@ -137,7 +137,7 @@ type SBC struct {
 	instruction uint16
 }
 
-func (s SBC) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (s SBC) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("SBC")
 
 	// Bits 5-3 are the source register
@@ -156,7 +156,7 @@ type ROR struct {
 	instruction uint16
 }
 
-func (r ROR) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (r ROR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("ROR")
 
 	// Bits 5-3 are the source register
@@ -191,7 +191,7 @@ type TST struct {
 	instruction uint16
 }
 
-func (t TST) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (t TST) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("TST")
 
 	// Bits 5-3 are the source register
@@ -217,7 +217,7 @@ type NEG struct {
 	instruction uint16
 }
 
-func (n NEG) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (n NEG) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("NEG")
 
 	// Bits 5-3 are the source register
@@ -236,7 +236,7 @@ type CMPALU struct {
 	instruction uint16
 }
 
-func (c CMPALU) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (c CMPALU) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("CMP")
 
 	// Bits 5-3 are the source register
@@ -261,7 +261,7 @@ type CMN struct {
 	instruction uint16
 }
 
-func (c CMN) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (c CMN) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("CMN")
 
 	// Bits 5-3 are the source register
@@ -280,7 +280,7 @@ type ORR struct {
 	instruction uint16
 }
 
-func (o ORR) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (o ORR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("ORR")
 
 	// Bits 5-3 are the source register
@@ -306,7 +306,7 @@ type MUL struct {
 	instruction uint16
 }
 
-func (m MUL) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (m MUL) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("MUL")
 
 	// Bits 5-3 are the source register
@@ -331,7 +331,7 @@ type BIC struct {
 	instruction uint16
 }
 
-func (b BIC) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (b BIC) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("BIC")
 
 	// Bits 5-3 are the source register
@@ -356,7 +356,7 @@ type MVN struct {
 	instruction uint16
 }
 
-func (m MVN) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (m MVN) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("MVN")
 
 	// Bits 5-3 are the source register
@@ -379,7 +379,7 @@ type LSLMoveShifted struct {
 	instruction uint16
 }
 
-func (l LSLMoveShifted) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (l LSLMoveShifted) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("LSL")
 
 	// Bits 10-6 are the offset
@@ -406,7 +406,7 @@ type LSRMoveShifted struct {
 	instruction uint16
 }
 
-func (l LSRMoveShifted) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (l LSRMoveShifted) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("LSR")
 
 	// Bits 10-6 are the offset
@@ -436,7 +436,7 @@ type ASRMoveShifted struct {
 	instruction uint16
 }
 
-func (a ASRMoveShifted) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (a ASRMoveShifted) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("ASR")
 
 	// Bits 10-6 are the offset

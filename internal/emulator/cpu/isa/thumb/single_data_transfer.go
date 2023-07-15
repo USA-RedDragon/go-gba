@@ -10,7 +10,7 @@ type LDR struct {
 	instruction uint16
 }
 
-func (l LDR) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (l LDR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bits 10-8 are the destination register
 	rd := uint8(l.instruction & (1<<10 | 1<<9 | 1<<8) >> 8)
 
@@ -37,7 +37,7 @@ type LDRR struct {
 	instruction uint16
 }
 
-func (l LDRR) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (l LDRR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bit 10 is the B bit, which determines whether this is a byte or word
 	byte := l.instruction&(1<<10)>>10 == 1
 
@@ -64,7 +64,7 @@ type STRR struct {
 	instruction uint16
 }
 
-func (s STRR) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (s STRR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bit 10 is the B bit, which determines whether this is a byte or word
 	byte := s.instruction&(1<<10)>>10 == 1
 
@@ -108,7 +108,7 @@ type STRSP struct {
 	instruction uint16
 }
 
-func (s STRSP) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (s STRSP) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("STRSP")
 
 	// Bits 10-8 are the destination register
@@ -132,7 +132,7 @@ type LDRSP struct {
 	instruction uint16
 }
 
-func (l LDRSP) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (l LDRSP) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("LDRSP")
 
 	// Bits 10-8 are the destination register
@@ -155,7 +155,7 @@ type LDRH struct {
 	instruction uint16
 }
 
-func (l LDRH) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (l LDRH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("LDRH")
 
 	// Bits 10-6 are the offset
@@ -183,7 +183,7 @@ type STRH struct {
 	instruction uint16
 }
 
-func (s STRH) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (s STRH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("STRH")
 
 	// Bits 10-6 are the offset
@@ -209,7 +209,7 @@ type LDRBImm struct {
 	instruction uint16
 }
 
-func (l LDRBImm) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (l LDRBImm) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("LDRBImm")
 
 	// Bits 10-6 are the offset
@@ -236,7 +236,7 @@ type STRBImm struct {
 	instruction uint16
 }
 
-func (s STRBImm) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (s STRBImm) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("STRBImm")
 
 	// Bits 10-6 are the offset
@@ -262,7 +262,7 @@ type LDRWImm struct {
 	instruction uint16
 }
 
-func (l LDRWImm) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (l LDRWImm) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("LDRWImm")
 
 	// Bits 10-6 are the offset
@@ -290,7 +290,7 @@ type STRWImm struct {
 	instruction uint16
 }
 
-func (s STRWImm) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (s STRWImm) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("STRWImm")
 
 	// Bits 10-6 are the offset
@@ -316,7 +316,7 @@ type LDMIA struct {
 	instruction uint16
 }
 
-func (l LDMIA) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (l LDMIA) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bits 10-8 are the base register
 	rb := uint8(l.instruction & (1<<10 | 1<<9 | 1<<8) >> 8)
 
@@ -356,7 +356,7 @@ type STMIA struct {
 	instruction uint16
 }
 
-func (s STMIA) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (s STMIA) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bits 10-8 are the base register
 	rb := uint8(s.instruction & (1<<10 | 1<<9 | 1<<8) >> 8)
 
@@ -397,7 +397,7 @@ type STRNSH struct {
 }
 
 // strh unsigned offset
-func (s STRNSH) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (s STRNSH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Store halfword:
 	// Add Ro to base address in Rb. Store bits 0-
 	// 15 of Rd at the resulting address
@@ -427,7 +427,7 @@ type LDRNSH struct {
 }
 
 // ldrh unsigned offset
-func (l LDRNSH) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (l LDRNSH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Load halfword:
 	// Add Ro to base address in Rb. Load bits 0-
 	// 15 of Rd from the resulting address, and set
@@ -461,7 +461,7 @@ type LDSB struct {
 }
 
 // ldrsb signed offset
-func (l LDSB) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (l LDSB) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	panic("LDSB not implemented")
 }
 
@@ -470,6 +470,6 @@ type LDSH struct {
 }
 
 // ldrsh signed offset
-func (l LDSH) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (l LDSH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	panic("LDSH not implemented")
 }

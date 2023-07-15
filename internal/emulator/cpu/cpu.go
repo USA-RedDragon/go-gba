@@ -75,6 +75,8 @@ type ARM7TDMI struct {
 	prefetchThumbPipeline [2]uint16
 
 	config *config.Config
+
+	waitCycles uint16
 }
 
 // Enum for CPU mode
@@ -793,16 +795,13 @@ func (c *ARM7TDMI) stepARM() {
 		}
 		instr := arm.DecodeInstruction(instruction)
 		if instr != nil {
-			repipeline := instr.Execute(c)
-			if repipeline {
-				c.FlushPipeline()
-			} else {
-				if oldPC != c.r[PC_REG] {
-					if c.config.Debug {
-						fmt.Printf("Branching from 0x%08X to 0x%08X, flushing pipeline\n", oldPC, c.r[PC_REG])
-					}
-					c.FlushPipeline()
+			repipeline, cycles := instr.Execute(c)
+			c.waitCycles += cycles
+			if repipeline || oldPC != c.r[PC_REG] {
+				if c.config.Debug {
+					fmt.Printf("Branching from 0x%08X to 0x%08X, flushing pipeline\n", oldPC, c.r[PC_REG])
 				}
+				c.FlushPipeline()
 			}
 		} else {
 			panic(fmt.Sprintf("Unknown instruction 0x%08X\n", instruction))
@@ -891,16 +890,13 @@ func (c *ARM7TDMI) stepThumb() {
 	// EXECUTE
 	oldPC := c.r[PC_REG]
 	if instr != nil {
-		repipeline := instr.Execute(c)
-		if repipeline {
-			c.FlushPipeline()
-		} else {
-			if oldPC != c.r[PC_REG] {
-				if c.config.Debug {
-					fmt.Printf("Branching from 0x%08X to 0x%08X, flushing pipeline\n", oldPC, c.r[PC_REG])
-				}
-				c.FlushPipeline()
+		repipeline, cycles := instr.Execute(c)
+		c.waitCycles += cycles
+		if repipeline || oldPC != c.r[PC_REG] {
+			if c.config.Debug {
+				fmt.Printf("Branching from 0x%08X to 0x%08X, flushing pipeline\n", oldPC, c.r[PC_REG])
 			}
+			c.FlushPipeline()
 		}
 	} else {
 		fmt.Printf("Unknown instruction 0x%04X\n", instruction)
@@ -935,6 +931,11 @@ func (c *ARM7TDMI) InteractiveRun() {
 
 func (c *ARM7TDMI) Step() {
 	if !c.halted {
+		if c.waitCycles > 0 {
+			c.waitCycles--
+			c.PPU.Step()
+			return
+		}
 		// if c.r[CPSR_REG] bit 5 is set, the CPU is in thumb mode
 		if c.r[CPSR_REG]&(1<<5)>>5 == 0 {
 			c.stepARM()

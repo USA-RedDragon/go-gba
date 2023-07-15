@@ -10,7 +10,7 @@ type MOV struct {
 	instruction uint16
 }
 
-func (m MOV) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (m MOV) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bits 10-8 are the destination register
 	rd := uint8(m.instruction & (1<<10 | 1<<9 | 1<<8) >> 8)
 	// Bits 7-0 are the immediate value
@@ -29,7 +29,7 @@ type CMP struct {
 	instruction uint16
 }
 
-func (c CMP) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (c CMP) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("CMP")
 	// Bits 10-8 are the destination register
 	rd := uint8(c.instruction & (1<<10 | 1<<9 | 1<<8) >> 8)
@@ -52,7 +52,7 @@ type ADD struct {
 	instruction uint16
 }
 
-func (a ADD) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (a ADD) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("ADD")
 	// Bits 10-8 are the destination register
 	rd := uint8(a.instruction & (1<<10 | 1<<9 | 1<<8) >> 8)
@@ -71,7 +71,7 @@ type SUB struct {
 	instruction uint16
 }
 
-func (s SUB) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (s SUB) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("SUB")
 	// Bits 10-8 are the destination register
 	rd := uint8(s.instruction & (1<<10 | 1<<9 | 1<<8) >> 8)
@@ -93,7 +93,7 @@ type ADD2 struct {
 	instruction uint16
 }
 
-func (a ADD2) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (a ADD2) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("ADD2")
 
 	// Bits 8-6 are the immediate value
@@ -143,7 +143,7 @@ type SUB2 struct {
 	instruction uint16
 }
 
-func (s SUB2) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (s SUB2) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("SUB2")
 
 	// Bits 8-6 are the immediate value
@@ -172,7 +172,7 @@ type SUBSP struct {
 	instruction uint16
 }
 
-func (a SUBSP) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (a SUBSP) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("SUBSP")
 
 	// Bit 7 == 1 if the offset is negative

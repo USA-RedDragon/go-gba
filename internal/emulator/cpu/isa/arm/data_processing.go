@@ -10,7 +10,7 @@ type AND struct {
 	instruction uint32
 }
 
-func (a AND) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (a AND) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	if cpu.GetConfig().Debug {
 		fmt.Println("AND")
 	}
@@ -53,7 +53,7 @@ type EOR struct {
 	instruction uint32
 }
 
-func (e EOR) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (e EOR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("EOR")
 	panic("Not implemented")
 	return
@@ -63,7 +63,7 @@ type SUB struct {
 	instruction uint32
 }
 
-func (s SUB) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (s SUB) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// If bit 25 is set, then the instruction is an immediate operation.
 	immediate := (s.instruction&(1<<25))>>25 == 1
 
@@ -101,7 +101,7 @@ type RSB struct {
 	instruction uint32
 }
 
-func (r RSB) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (r RSB) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	if cpu.GetConfig().Debug {
 		fmt.Println("RSB")
 	}
@@ -145,7 +145,7 @@ type ADD struct {
 	instruction uint32
 }
 
-func (a ADD) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (a ADD) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	if cpu.GetConfig().Debug {
 		fmt.Println("ADD")
 	}
@@ -185,7 +185,7 @@ type ADC struct {
 	instruction uint32
 }
 
-func (a ADC) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (a ADC) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	if cpu.GetConfig().Debug {
 		fmt.Println("ADC")
 	}
@@ -229,7 +229,7 @@ type SBC struct {
 	instruction uint32
 }
 
-func (s SBC) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (s SBC) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	if cpu.GetConfig().Debug {
 		fmt.Println("SBC")
 	}
@@ -276,7 +276,7 @@ type RSC struct {
 	instruction uint32
 }
 
-func (rsc RSC) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (rsc RSC) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("RSC")
 	panic("Not implemented")
 	return
@@ -286,7 +286,7 @@ type TST struct {
 	instruction uint32
 }
 
-func (t TST) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (t TST) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// If bit 25 is set, then the instruction is an immediate operation.
 	immediate := (t.instruction&(1<<25))>>25 == 1
 
@@ -320,7 +320,7 @@ type TEQ struct {
 	instruction uint32
 }
 
-func (t TEQ) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (t TEQ) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// If bit 25 is set, then the instruction is an immediate operation.
 	immediate := (t.instruction&(1<<25))>>25 == 1
 
@@ -348,7 +348,7 @@ type CMP struct {
 	instruction uint32
 }
 
-func (c CMP) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (c CMP) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	if cpu.GetConfig().Debug {
 		fmt.Println("CMP")
 	}
@@ -384,7 +384,7 @@ type CMN struct {
 	instruction uint32
 }
 
-func (c CMN) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (c CMN) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("CMN")
 	panic("Not implemented")
 	return
@@ -394,7 +394,7 @@ type ORR struct {
 	instruction uint32
 }
 
-func (o ORR) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (o ORR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// If bit 25 is set, then the instruction is an immediate operation.
 	immediate := (o.instruction&(1<<25))>>25 == 1
 
@@ -430,7 +430,7 @@ type MOV struct {
 	instruction uint32
 }
 
-func (m MOV) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (m MOV) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Destination register is bits 15-12
 	destination := uint8((m.instruction & 0x0000F000) >> 12)
 
@@ -461,7 +461,7 @@ type BIC struct {
 	instruction uint32
 }
 
-func (b BIC) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (b BIC) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	if cpu.GetConfig().Debug {
 		fmt.Println("BIC")
 	}
@@ -500,7 +500,7 @@ type MVN struct {
 	instruction uint32
 }
 
-func (m MVN) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (m MVN) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("MVN")
 	// Destination register is bits 15-12
 	destination := uint8((m.instruction & 0x0000F000) >> 12)

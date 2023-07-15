@@ -10,7 +10,7 @@ type MSR struct {
 	instruction uint32
 }
 
-func (m MSR) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (m MSR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	if cpu.GetConfig().Debug {
 		fmt.Println("PSR Transfer MSR")
 	}
@@ -59,7 +59,7 @@ type MRS struct {
 	instruction uint32
 }
 
-func (m MRS) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (m MRS) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	if cpu.GetConfig().Debug {
 		fmt.Println("PSR Transfer MRS")
 	}

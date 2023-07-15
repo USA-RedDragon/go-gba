@@ -10,7 +10,7 @@ type MLA struct {
 	instruction uint32
 }
 
-func (m MLA) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (m MLA) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bit 20 determines whether or not to update the condition codes
 	updateConditionCodes := (m.instruction&(1<<20))>>20 == 1
 
@@ -51,7 +51,7 @@ type MUL struct {
 	instruction uint32
 }
 
-func (m MUL) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (m MUL) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bit 20 determines whether or not to update the condition codes
 	updateConditionCodes := (m.instruction&(1<<20))>>20 == 1
 

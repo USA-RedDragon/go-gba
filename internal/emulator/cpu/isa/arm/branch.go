@@ -10,7 +10,7 @@ type B struct {
 	instruction uint32
 }
 
-func (b B) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (b B) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	offset := b.instruction & 0x00FFFFFF
 	// Sign extend the offset
 	if offset&0x00800000 != 0 {
@@ -38,7 +38,7 @@ type BL struct {
 	instruction uint32
 }
 
-func (bl BL) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (bl BL) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	offset := bl.instruction & 0x00FFFFFF
 	// Sign extend the offset
 	if offset&0x00800000 != 0 {
@@ -68,7 +68,7 @@ type BX struct {
 	instruction uint32
 }
 
-func (bx BX) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (bx BX) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bits 3-0 are the register to branch to
 	rm := uint8(bx.instruction & 0x0000000F)
 

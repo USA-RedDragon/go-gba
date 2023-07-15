@@ -10,7 +10,7 @@ type LDR struct {
 	instruction uint32
 }
 
-func (ldr LDR) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (ldr LDR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	immediate := ldr.instruction&(1<<25)>>25 == 0
 	pre := ldr.instruction&(1<<24)>>24 == 1
 	up := ldr.instruction&(1<<23)>>23 == 1
@@ -101,7 +101,7 @@ type STR struct {
 	instruction uint32
 }
 
-func (str STR) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (str STR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	immediate := str.instruction&(1<<25)>>25 == 0
 	pre := str.instruction&(1<<24)>>24 == 1
 	up := str.instruction&(1<<23)>>23 == 1
@@ -180,7 +180,7 @@ type LDM struct {
 	instruction uint32
 }
 
-func (ldm LDM) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (ldm LDM) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bit 24 == 1 means pre-indexed addressing
 	pre := ldm.instruction&(1<<24)>>24 == 1
 	// Bit 23 == 1 means the offset is added to the base register (up)
@@ -266,7 +266,7 @@ type STM struct {
 	instruction uint32
 }
 
-func (stm STM) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (stm STM) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bit 24 == 1 means pre-indexed addressing
 	pre := stm.instruction&(1<<24)>>24 == 1
 	// Bit 23 == 1 means the offset is added to the base register (up)
@@ -363,7 +363,7 @@ type LDRSH struct {
 	instruction uint32
 }
 
-func (ldrsh LDRSH) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (ldrsh LDRSH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// // Bit 24 == 1 means pre-indexed addressing
 	// pre := ldrsh.instruction&(1<<24)>>24 == 1
 	// // Bit 23 == 1 means the offset is added to the base register (up)
@@ -390,7 +390,7 @@ type LDRSB struct {
 	instruction uint32
 }
 
-func (ldrsb LDRSB) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (ldrsb LDRSB) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// // Bit 24 == 1 means pre-indexed addressing
 	// pre := ldrsb.instruction&(1<<24)>>24 == 1
 	// // Bit 23 == 1 means the offset is added to the base register (up)
@@ -416,7 +416,7 @@ type LDRH struct {
 	instruction uint32
 }
 
-func (ldrh LDRH) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (ldrh LDRH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bit 24 == 1 means pre-indexed addressing
 	pre := ldrh.instruction&(1<<24)>>24 == 1
 	// Bit 23 == 1 means the offset is added to the base register (up)
@@ -473,7 +473,7 @@ type STRSH struct {
 	instruction uint32
 }
 
-func (strsh STRSH) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (strsh STRSH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// // Bit 24 == 1 means pre-indexed addressing
 	// pre := strsh.instruction&(1<<24)>>24 == 1
 	// // Bit 23 == 1 means the offset is added to the base register (up)
@@ -499,7 +499,7 @@ type STRSB struct {
 	instruction uint32
 }
 
-func (strsb STRSB) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (strsb STRSB) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// // Bit 24 == 1 means pre-indexed addressing
 	// pre := strsb.instruction&(1<<24)>>24 == 1
 	// // Bit 23 == 1 means the offset is added to the base register (up)
@@ -525,7 +525,7 @@ type STRH struct {
 	instruction uint32
 }
 
-func (strh STRH) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (strh STRH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bit 24 == 1 means pre-indexed addressing
 	pre := strh.instruction&(1<<24)>>24 == 1
 	// Bit 23 == 1 means the offset is added to the base register (up)
@@ -582,7 +582,7 @@ type LDRSHRegisterOffset struct {
 	instruction uint32
 }
 
-func (ldrsh LDRSHRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (ldrsh LDRSHRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	panic("LDRSHRegisterOffset Not implemented")
 }
 
@@ -590,7 +590,7 @@ type LDRSBRegisterOffset struct {
 	instruction uint32
 }
 
-func (ldrsb LDRSBRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (ldrsb LDRSBRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	panic("LDRSBRegisterOffset Not implemented")
 }
 
@@ -598,7 +598,7 @@ type LDRHRegisterOffset struct {
 	instruction uint32
 }
 
-func (ldrh LDRHRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (ldrh LDRHRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	panic("LDRHRegisterOffset Not implemented")
 }
 
@@ -606,7 +606,7 @@ type STRSHRegisterOffset struct {
 	instruction uint32
 }
 
-func (strsh STRSHRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (strsh STRSHRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	panic("STRSHRegisterOffset Not implemented")
 }
 
@@ -614,7 +614,7 @@ type STRSBRegisterOffset struct {
 	instruction uint32
 }
 
-func (strsb STRSBRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (strsb STRSBRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	panic("STRSBRegisterOffset Not implemented")
 }
 
@@ -622,7 +622,7 @@ type STRHRegisterOffset struct {
 	instruction uint32
 }
 
-func (strh STRHRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (strh STRHRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bit 24 == 1 means pre-indexed addressing
 	pre := strh.instruction&(1<<24)>>24 == 1
 	// Bit 23 == 1 means the offset is added to the base register (up)

@@ -10,7 +10,7 @@ type UnconditionalBranch struct {
 	instruction uint16
 }
 
-func (u UnconditionalBranch) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (u UnconditionalBranch) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("UnconditionalBranch")
 
 	// Bits 10-0 are the offset
@@ -28,7 +28,7 @@ type B struct {
 	instruction uint16
 }
 
-func (a B) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (a B) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("B")
 	fmt.Println("ConditionalBranch")
 	// Bits 11-8 are the condition
@@ -73,7 +73,8 @@ func (a B) Execute(cpu interfaces.CPU) (repipeline bool) {
 
 	if conditionPassed {
 		if offset == 0 {
-			return true
+			repipeline = true
+			return
 		} else {
 			cpu.WritePC(cpu.ReadPC() + uint32(offset))
 		}
@@ -87,7 +88,7 @@ type BX struct {
 	instruction uint16
 }
 
-func (a BX) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (a BX) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("BX")
 
 	// Bits 7-6 are the hi operand flags
@@ -126,7 +127,7 @@ type LBL struct {
 	instruction uint16
 }
 
-func (a LBL) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (a LBL) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("LBL")
 
 	// Bit 11 == 1 is low offset

@@ -10,7 +10,7 @@ type PUSH struct {
 	instruction uint16
 }
 
-func (p PUSH) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (p PUSH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("PUSH")
 
 	// Bit 8 denotes storing LR
@@ -45,7 +45,7 @@ type POP struct {
 	instruction uint16
 }
 
-func (p POP) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (p POP) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("POP")
 
 	// Bit 8 denotes loading PC

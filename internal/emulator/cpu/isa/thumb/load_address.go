@@ -10,7 +10,7 @@ type ADDSP struct {
 	instruction uint16
 }
 
-func (a ADDSP) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (a ADDSP) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bits 10-8 are the destination register
 	rd := uint8(a.instruction & (1<<10 | 1<<9 | 1<<8) >> 8)
 
@@ -28,7 +28,7 @@ type ADDPC struct {
 	instruction uint16
 }
 
-func (a ADDPC) Execute(cpu interfaces.CPU) (repipeline bool) {
+func (a ADDPC) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bits 10-8 are the destination register
 	rd := uint8(a.instruction & (1<<10 | 1<<9 | 1<<8) >> 8)
 
