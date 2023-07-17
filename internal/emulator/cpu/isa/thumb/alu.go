@@ -66,13 +66,24 @@ func (l LSL) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	// Bits 5-3 are the source register
 	rs := uint8(l.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
+	rsVal := cpu.ReadRegister(rs)
 
 	// Bits 2-0 are the destination register
 	rd := uint8(l.instruction & (1<<2 | 1<<1 | 1<<0))
+	rdVal := cpu.ReadRegister(rd)
 
 	fmt.Printf("lsl r%d, r%d\n", rd, rs)
 
-	panic("Not implemented")
+	res := rdVal << rsVal
+
+	cpu.WriteRegister(rd, res)
+
+	cpu.SetN(res&(1<<31)>>31 != 0)
+	cpu.SetZ(res == 0)
+	// The C flag is unaffected if the shift value is 0. Otherwise, the C flag is updated to the last bit shifted out.
+	if rsVal != 0 {
+		cpu.SetC(rdVal&(1<<(32-rsVal))>>31 != 0)
+	}
 	return
 }
 
