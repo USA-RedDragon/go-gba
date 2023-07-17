@@ -896,6 +896,10 @@ func (c *ARM7TDMI) stepThumb() {
 			if c.config.Debug {
 				fmt.Printf("Branching from 0x%08X to 0x%08X, flushing pipeline\n", oldPC, c.r[PC_REG])
 			}
+			if (c.r[PC_REG] & 0x1) != 0 {
+				// Unaligned PC, align it
+				c.r[PC_REG] &= 0xFFFFFFFE
+			}
 			c.FlushPipeline()
 		}
 	} else {
