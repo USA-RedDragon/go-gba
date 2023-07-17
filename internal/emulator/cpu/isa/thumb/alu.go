@@ -2,7 +2,6 @@ package thumb
 
 import (
 	"fmt"
-	"math/bits"
 
 	"github.com/USA-RedDragon/go-gba/internal/emulator/interfaces"
 )
@@ -82,7 +81,8 @@ func (l LSL) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	cpu.SetZ(res == 0)
 	// The C flag is unaffected if the shift value is 0. Otherwise, the C flag is updated to the last bit shifted out.
 	if rsVal != 0 {
-		cpu.SetC(rdVal&(1<<(32-rsVal))>>31 != 0)
+		carry := rdVal&(1<<(32-rsVal)) > 0
+		cpu.SetC(carry)
 	}
 	return
 }
@@ -96,13 +96,26 @@ func (l LSR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	// Bits 5-3 are the source register
 	rs := uint8(l.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
+	rsVal := cpu.ReadRegister(rs)
 
 	// Bits 2-0 are the destination register
 	rd := uint8(l.instruction & (1<<2 | 1<<1 | 1<<0))
+	rdVal := cpu.ReadRegister(rd)
 
 	fmt.Printf("lsr r%d, r%d\n", rd, rs)
 
-	panic("Not implemented")
+	res := rdVal >> rsVal
+
+	cpu.WriteRegister(rd, res)
+
+	cpu.SetN(res&(1<<31)>>31 != 0)
+	cpu.SetZ(res == 0)
+	// The C flag is unaffected if the shift value is 0. Otherwise, the C flag is updated to the last bit shifted out.
+	if rsVal != 0 {
+		carry := rdVal&(1<<(rsVal-1)) > 0
+		cpu.SetC(carry)
+	}
+
 	return
 }
 
@@ -115,13 +128,29 @@ func (a ASR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	// Bits 5-3 are the source register
 	rs := uint8(a.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
+	rsVal := cpu.ReadRegister(rs)
 
 	// Bits 2-0 are the destination register
 	rd := uint8(a.instruction & (1<<2 | 1<<1 | 1<<0))
+	rdVal := cpu.ReadRegister(rd)
 
 	fmt.Printf("asr r%d, r%d\n", rd, rs)
 
-	panic("Not implemented")
+	msb := rdVal & 0x8000_0000
+	res := rdVal
+	for i := uint(0); i < uint(rsVal); i++ {
+		res = (res >> 1) | msb
+	}
+
+	cpu.WriteRegister(rd, res)
+
+	carry := rdVal&(1<<(rsVal-1)) > 0
+	if rsVal > 0 {
+		cpu.SetC(carry)
+	}
+	cpu.SetN(res&(1<<31)>>31 != 0)
+	cpu.SetZ(res == 0)
+
 	return
 }
 
@@ -180,18 +209,22 @@ func (r ROR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	// Rotate rs right by the value in rd
 	// Then set the carry flag to the last bit we rotated out of rs
-	val := cpu.ReadRegister(rs)
-	shift := cpu.ReadRegister(rd)
+	is := cpu.ReadRegister(rs)
+	val := cpu.ReadRegister(rd)
 
-	// Set the carry flag to the last bit we will rotate out of rs
-	carryBit := (val & (1 << (shift - 1))) >> (shift - 1)
-
-	// Rotate right by the value in rd
-	res := bits.RotateLeft32(val, -int(shift))
+	carry := (val>>(is-1))&0b1 > 0
+	if is > 0 {
+		cpu.SetC(carry)
+	} else {
+		cpu.SetC(val&0b1 > 0)
+	}
+	is %= 32
+	tmp0 := (val) >> (is)
+	tmp1 := (val) << (32 - (is))
+	res := tmp0 | tmp1
 
 	cpu.WriteRegister(rd, res)
 
-	cpu.SetC(carryBit == 1)
 	cpu.SetN(res&(1<<31)>>31 != 0)
 	cpu.SetZ(res == 0)
 
@@ -383,6 +416,7 @@ func (m MVN) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	// N flag is set if the result is negative
 	cpu.SetN(cpu.ReadRegister(rd)&(1<<31)>>31 != 0)
+	cpu.SetZ(cpu.ReadRegister(rd) == 0)
 	return
 }
 
@@ -398,6 +432,7 @@ func (l LSLMoveShifted) Execute(cpu interfaces.CPU) (repipeline bool, cycles uin
 
 	// Bits 5-3 are the source register
 	rs := uint8(l.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
+	rsVal := cpu.ReadRegister(rs)
 
 	// Bits 2-0 are the destination register
 	rd := uint8(l.instruction & (1<<2 | 1<<1 | 1<<0))
@@ -405,11 +440,18 @@ func (l LSLMoveShifted) Execute(cpu interfaces.CPU) (repipeline bool, cycles uin
 	fmt.Printf("lsls r%d, r%d, #0x%X\n", rd, rs, offset)
 
 	// Shift the source register left by the offset and store the result in the destination register
-	cpu.WriteRegister(rd, cpu.ReadRegister(rs)<<offset)
+	res := rsVal << offset
+
+	cpu.WriteRegister(rd, res)
 
 	// Update the CPSR
-	cpu.SetZ(cpu.ReadRegister(rd) == 0)
-	cpu.SetN(cpu.ReadRegister(rd)&(1<<31)>>31 != 0)
+	cpu.SetZ(res == 0)
+	cpu.SetN(res&(1<<31)>>31 != 0)
+
+	if rsVal != 0 {
+		carry := rsVal&(1<<(32-offset)) > 0
+		cpu.SetC(carry)
+	}
 	return
 }
 
@@ -422,24 +464,32 @@ func (l LSRMoveShifted) Execute(cpu interfaces.CPU) (repipeline bool, cycles uin
 
 	// Bits 10-6 are the offset
 	offset := uint8(l.instruction & (1<<10 | 1<<9 | 1<<8 | 1<<7 | 1<<6) >> 6)
+	if offset == 0 {
+		offset = 32
+	}
 
 	// Bits 5-3 are the source register
 	rs := uint8(l.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
+	rsVal := cpu.ReadRegister(rs)
 
 	// Bits 2-0 are the destination register
 	rd := uint8(l.instruction & (1<<2 | 1<<1 | 1<<0))
 
 	fmt.Printf("lsrs r%d, r%d, #0x%X\n", rd, rs, offset)
 
-	rsVal := cpu.ReadRegister(rs)
+	res := rsVal >> offset
 
 	// Shift the source register right by the offset and store the result in the destination register
-	cpu.WriteRegister(rd, rsVal>>offset)
+	cpu.WriteRegister(rd, res)
 
 	// Update the CPSR
-	cpu.SetZ(cpu.ReadRegister(rd) == 0)
-	cpu.SetN(cpu.ReadRegister(rd)&(1<<31) != 0)
-	cpu.SetC(rsVal&(1<<(offset-1)) != 0)
+	cpu.SetN(res&(1<<31)>>31 != 0)
+	cpu.SetZ(res == 0)
+	// The C flag is unaffected if the shift value is 0. Otherwise, the C flag is updated to the last bit shifted out.
+	if rsVal != 0 {
+		carry := rsVal&(1<<(offset-1)) > 0
+		cpu.SetC(carry)
+	}
 	return
 }
 
@@ -452,15 +502,33 @@ func (a ASRMoveShifted) Execute(cpu interfaces.CPU) (repipeline bool, cycles uin
 
 	// Bits 10-6 are the offset
 	offset := uint8(a.instruction & (1<<10 | 1<<9 | 1<<8 | 1<<7 | 1<<6) >> 6)
+	if offset == 0 || offset > 32 {
+		offset = 32
+	}
 
 	// Bits 5-3 are the source register
 	rs := uint8(a.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
+	rsVal := cpu.ReadRegister(rs)
 
 	// Bits 2-0 are the destination register
 	rd := uint8(a.instruction & (1<<2 | 1<<1 | 1<<0))
 
 	fmt.Printf("asrs r%d, r%d, #0x%X\n", rd, rs, offset)
 
-	panic("Not implemented")
+	msb := rsVal & 0x8000_0000
+	res := rsVal
+	for i := uint(0); i < uint(offset); i++ {
+		res = (res >> 1) | msb
+	}
+
+	cpu.WriteRegister(rd, res)
+
+	carry := rsVal&(1<<(offset-1)) > 0
+	if offset > 0 {
+		cpu.SetC(carry)
+	}
+	cpu.SetN(res&(1<<31)>>31 != 0)
+	cpu.SetZ(res == 0)
+
 	return
 }

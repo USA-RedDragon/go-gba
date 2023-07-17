@@ -56,6 +56,7 @@ func (a ADD) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("ADD")
 	// Bits 10-8 are the destination register
 	rd := uint8(a.instruction & (1<<10 | 1<<9 | 1<<8) >> 8)
+	rdVal := cpu.ReadRegister(rd)
 	// Bits 7-0 are the immediate value
 	imm := uint32(a.instruction & 0xFF)
 
@@ -63,7 +64,13 @@ func (a ADD) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Printf("Immediate value: %d\n", imm)
 
 	// Add the immediate value to the destination register
-	cpu.WriteRegister(rd, cpu.ReadRegister(rd)+imm)
+	res := rdVal + imm
+	cpu.WriteRegister(rd, res)
+
+	cpu.SetN(res&(1<<31)>>31 != 0)
+	cpu.SetZ(res == 0)
+	cpu.SetC(rdVal > imm)
+	cpu.SetV((rdVal^imm)>>31 == 0 && (rdVal^res)>>31 == 1)
 	return
 }
 
@@ -75,6 +82,7 @@ func (s SUB) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("SUB")
 	// Bits 10-8 are the destination register
 	rd := uint8(s.instruction & (1<<10 | 1<<9 | 1<<8) >> 8)
+	rdVal := cpu.ReadRegister(rd)
 	// Bits 7-0 are the immediate value
 	imm := uint32(s.instruction & 0xFF)
 
@@ -82,10 +90,13 @@ func (s SUB) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Printf("Immediate value: %d\n", imm)
 
 	// Subtract the immediate value from the destination register
-	cpu.WriteRegister(rd, cpu.ReadRegister(rd)-imm)
+	res := rdVal - imm
+	cpu.WriteRegister(rd, res)
 
-	cpu.SetN(cpu.ReadRegister(rd)&(1<<31)>>31 != 0)
-	cpu.SetZ(cpu.ReadRegister(rd) == 0)
+	cpu.SetN(res&(1<<31)>>31 != 0)
+	cpu.SetZ(res == 0)
+	cpu.SetC(rdVal >= imm)
+	cpu.SetV((rdVal^imm)>>31 == 1 && (rdVal^res)>>31 == 1)
 	return
 }
 
