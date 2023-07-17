@@ -46,8 +46,28 @@ type EOR struct {
 }
 
 func (e EOR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
-	fmt.Println("EOR")
-	panic("Not implemented")
+	// Rn is bits 19-16
+	rn := uint8((e.instruction & 0x000F0000) >> 16)
+	rnVal := cpu.ReadRegister(rn)
+
+	op2 := ALUOp2(e.instruction, cpu)
+
+	// Rd is bits 15-12
+	rd := uint8((e.instruction & 0x0000F000) >> 12)
+
+	res := rnVal ^ op2
+
+	if cpu.GetConfig().Debug {
+		fmt.Printf("eor r%d, r%d, %d = %08X\n", rd, rn, op2, res)
+	}
+
+	cpu.WriteRegister(rd, res)
+
+	if e.instruction&(1<<20)>>20 == 1 {
+		cpu.SetZ(res == 0)
+		cpu.SetN(res&(1<<31)>>31 != 0)
+	}
+
 	return
 }
 
@@ -247,7 +267,36 @@ type RSC struct {
 
 func (rsc RSC) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("RSC")
-	panic("Not implemented")
+	// Rn is bits 19-16
+	rn := uint8((rsc.instruction & 0x000F0000) >> 16)
+	rnVal := cpu.ReadRegister(rn)
+
+	// Rd is bits 15-12
+	rd := uint8((rsc.instruction & 0x0000F000) >> 12)
+
+	op2 := ALUOp2(rsc.instruction, cpu)
+
+	// Rd:= Op2 - Op1 + C - 1
+	c := uint32(0)
+	if cpu.GetC() {
+		c = 1
+	}
+	res := op2 - rnVal + c - 1
+
+	cpu.WriteRegister(rd, res)
+
+	if rsc.instruction&(1<<20)>>20 == 1 {
+		// Set carry flag if the subtraction would make a positive number.
+		carry := (rnVal + c - 1) >= op2
+		// Set overflow flag if the subtraction would overflow.
+		overflow := (rnVal^op2)>>31 == 1 && (rnVal^res)>>31 == 1
+
+		cpu.SetN(res&(1<<31)>>31 != 0)
+		cpu.SetZ(res == 0)
+		cpu.SetV(overflow)
+		cpu.SetC(carry)
+	}
+
 	return
 }
 
@@ -332,8 +381,26 @@ type CMN struct {
 }
 
 func (c CMN) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
-	fmt.Println("CMN")
-	panic("Not implemented")
+	if cpu.GetConfig().Debug {
+		fmt.Println("CMN")
+	}
+
+	// Rn is bits 19-16
+	rn := uint8((c.instruction & 0x000F0000) >> 16)
+	rnVal := cpu.ReadRegister(rn)
+
+	op2 := ALUOp2(c.instruction, cpu)
+
+	res := rnVal + op2
+
+	if c.instruction&(1<<20)>>20 == 1 {
+		carry := (rnVal>>31)+(op2>>31) > (res >> 31)
+		overflow := (rnVal^op2)>>31 == 0 && (rnVal^res)>>31 == 1
+		cpu.SetN(res&(1<<31)>>31 != 0)
+		cpu.SetZ(res == 0)
+		cpu.SetV(overflow)
+		cpu.SetC(carry)
+	}
 	return
 }
 
