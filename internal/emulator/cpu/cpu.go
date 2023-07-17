@@ -232,7 +232,7 @@ func (c *ARM7TDMI) ReadSPSR() uint32 {
 	case undefinedMode:
 		return c.spsr_und
 	default:
-		panic("Unknown CPU mode")
+		panic(fmt.Sprintf("Unknown CPU mode: %d", c.r[CPSR_REG]&0x1F))
 	}
 }
 
@@ -1027,16 +1027,4 @@ func (c *ARM7TDMI) GetC() bool {
 func (c *ARM7TDMI) GetV() bool {
 	// Return bit 28 of CPSR
 	return c.r[CPSR_REG]&(1<<28)>>28 != 0
-}
-
-func (c *ARM7TDMI) SetConditionCodes(res uint32, carry bool, overflow bool) {
-	// Need to set CPSR Z, N, C, V
-	// Z is set if the result is 0
-	c.SetZ(res == 0)
-
-	// N is set if the result is negative
-	c.SetN(res&(1<<31)>>31 == 1)
-
-	c.SetC(carry)
-	c.SetV(overflow)
 }
