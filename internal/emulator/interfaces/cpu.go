@@ -33,7 +33,6 @@ type CPU interface {
 	GetN() bool
 	GetC() bool
 	GetV() bool
-	SetConditionCodes(res uint32, carry bool, overflow bool)
 
 	SetThumbMode(value bool)
 	GetThumbMode() bool

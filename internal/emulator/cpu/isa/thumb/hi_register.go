@@ -37,7 +37,7 @@ func (c CMPH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		fmt.Printf("cmp r%d, r%d\n", rd, rs+8)
 		res := cpu.ReadRegister(rd) - cpu.ReadHighRegister(rs)
 		cpu.SetZ(res == 0)
-		cpu.SetN(res&0x80000000 != 0)
+		cpu.SetN(res&(1<<31)>>31 != 0)
 		cpu.SetC(cpu.ReadRegister(rd) >= cpu.ReadHighRegister(rs))
 	case 0b10:
 		// cmp Hd, Rs
@@ -45,7 +45,7 @@ func (c CMPH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		res := cpu.ReadHighRegister(rd) - cpu.ReadRegister(rs)
 		fmt.Printf("res: %08X\n", res)
 		cpu.SetZ(res == 0)
-		cpu.SetN(res&0x80000000 != 0)
+		cpu.SetN(res&(1<<31)>>31 != 0)
 		cpu.SetC(cpu.ReadHighRegister(rd) >= cpu.ReadRegister(rs))
 	case 0b11:
 		// cmp Hd, Hs
@@ -53,7 +53,7 @@ func (c CMPH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		res := cpu.ReadHighRegister(rd) - cpu.ReadHighRegister(rs)
 		fmt.Printf("res: %08X\n", res)
 		cpu.SetZ(res == 0)
-		cpu.SetN(res&0x80000000 != 0)
+		cpu.SetN(res&(1<<31)>>31 != 0)
 		cpu.SetC(cpu.ReadHighRegister(rd) >= cpu.ReadHighRegister(rs))
 	default:
 		panic("Invalid hi operand flag")

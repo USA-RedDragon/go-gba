@@ -39,7 +39,7 @@ func (m MLA) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	if updateConditionCodes {
 		cpu.SetZ(res == 0)
-		cpu.SetN(res>>31 == 1)
+		cpu.SetN(res&(1<<31)>>31 != 0)
 	}
 
 	cpu.WriteRegister(rd, res)
@@ -76,7 +76,7 @@ func (m MUL) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	if updateConditionCodes {
 		cpu.SetZ(res == 0)
-		cpu.SetN(res>>31 == 1)
+		cpu.SetN(res&(1<<31)>>31 != 0)
 	}
 
 	cpu.WriteRegister(rd, res)

@@ -26,7 +26,7 @@ func (a AND) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	cpu.WriteRegister(rd, res)
 
-	cpu.SetN(res&(1<<31) != 0)
+	cpu.SetN(res&(1<<31)>>31 != 0)
 	cpu.SetZ(res == 0)
 
 	return
@@ -51,7 +51,7 @@ func (e EOR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	cpu.WriteRegister(rd, res)
 
-	cpu.SetN(res&(1<<31) != 0)
+	cpu.SetN(res&(1<<31)>>31 != 0)
 	cpu.SetZ(res == 0)
 
 	return
@@ -181,7 +181,7 @@ func (r ROR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	cpu.WriteRegister(rd, res)
 
 	cpu.SetC(carryBit == 1)
-	cpu.SetN(res&(1<<31) != 0)
+	cpu.SetN(res&(1<<31)>>31 != 0)
 	cpu.SetZ(res == 0)
 
 	return
@@ -209,7 +209,7 @@ func (t TST) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Update the status registers
 	cpu.SetZ(res == 0)
 	// Set N if the result is negative
-	cpu.SetN(res&(1<<31) != 0)
+	cpu.SetN(res&(1<<31)>>31 != 0)
 	return
 }
 
@@ -252,7 +252,7 @@ func (c CMPALU) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Update the status registers
 	cpu.SetZ(res == 0)
 	// Set N if the result is negative
-	cpu.SetN(res&(1<<31) != 0)
+	cpu.SetN(res&(1<<31)>>31 != 0)
 
 	return
 }
@@ -298,7 +298,7 @@ func (o ORR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	// update the status registers
 	cpu.SetZ(res == 0)
-	cpu.SetN(res&(1<<31) != 0)
+	cpu.SetN(res&(1<<31)>>31 != 0)
 	return
 }
 
@@ -322,7 +322,7 @@ func (m MUL) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	// update the status registers
 	cpu.SetZ(res == 0)
-	cpu.SetN(res&(1<<31) != 0)
+	cpu.SetN(res&(1<<31)>>31 != 0)
 
 	return
 }
@@ -347,7 +347,7 @@ func (b BIC) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	// update the status registers
 	cpu.SetZ(res == 0)
-	cpu.SetN(res&(1<<31) != 0)
+	cpu.SetN(res&(1<<31)>>31 != 0)
 
 	return
 }
@@ -371,7 +371,7 @@ func (m MVN) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	cpu.WriteRegister(rd, ^cpu.ReadRegister(rs))
 
 	// N flag is set if the result is negative
-	cpu.SetN(cpu.ReadRegister(rd)&(1<<31) != 0)
+	cpu.SetN(cpu.ReadRegister(rd)&(1<<31)>>31 != 0)
 	return
 }
 
@@ -398,7 +398,7 @@ func (l LSLMoveShifted) Execute(cpu interfaces.CPU) (repipeline bool, cycles uin
 
 	// Update the CPSR
 	cpu.SetZ(cpu.ReadRegister(rd) == 0)
-	cpu.SetN(cpu.ReadRegister(rd)&(1<<31) != 0)
+	cpu.SetN(cpu.ReadRegister(rd)&(1<<31)>>31 != 0)
 	return
 }
 

@@ -124,7 +124,7 @@ func (s STRSP) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		panic(err)
 	}
 
-	cpu.SetN(cpu.ReadRegister(rd)&(1<<31) != 0)
+	cpu.SetN(cpu.ReadRegister(rd)&(1<<31)>>31 != 0)
 	return
 }
 
