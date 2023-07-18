@@ -36,6 +36,9 @@ func (a AND) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		cpu.SetZ(res == 0)
 		cpu.SetN(res&(1<<31)>>31 != 0)
 		cpu.SetV(overflow)
+		if rd == 15 {
+			cpu.WriteCPSR(cpu.ReadSPSR())
+		}
 	}
 
 	return
@@ -66,6 +69,9 @@ func (e EOR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	if e.instruction&(1<<20)>>20 == 1 {
 		cpu.SetZ(res == 0)
 		cpu.SetN(res&(1<<31)>>31 != 0)
+		if rd == 15 {
+			cpu.WriteCPSR(cpu.ReadSPSR())
+		}
 	}
 
 	return
@@ -139,6 +145,9 @@ func (r RSB) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		cpu.SetZ(res == 0)
 		cpu.SetV(overflow)
 		cpu.SetC(carry)
+		if rd == 15 {
+			cpu.WriteCPSR(cpu.ReadSPSR())
+		}
 	}
 	return
 }
@@ -175,6 +184,9 @@ func (a ADD) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		cpu.SetZ(res == 0)
 		cpu.SetV(overflow)
 		cpu.SetC(carry)
+		if rd == 15 {
+			cpu.WriteCPSR(cpu.ReadSPSR())
+		}
 	}
 	return
 }
@@ -215,6 +227,9 @@ func (a ADC) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		cpu.SetZ(res == 0)
 		cpu.SetV(overflow)
 		cpu.SetC(carry)
+		if rd == 15 {
+			cpu.WriteCPSR(cpu.ReadSPSR())
+		}
 	}
 	return
 }
@@ -295,6 +310,9 @@ func (rsc RSC) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		cpu.SetZ(res == 0)
 		cpu.SetV(overflow)
 		cpu.SetC(carry)
+		if rd == 15 {
+			cpu.WriteCPSR(cpu.ReadSPSR())
+		}
 	}
 
 	return
@@ -361,6 +379,8 @@ func (c CMP) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	// Subtract op2 from Rn and update the condition flags, but do not store the result.
 	diff := rnVal - op2
+
+	fmt.Printf("cmp r%d, %d = %08X\n", rn, op2, diff)
 
 	if c.instruction&(1<<20)>>20 == 1 {
 		// Set carry flag if the subtraction would make a positive number.
@@ -451,6 +471,9 @@ func (m MOV) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	if m.instruction&(1<<20)>>20 == 1 {
 		cpu.SetZ(op2 == 0)
 		cpu.SetN(op2&(1<<31)>>31 != 0)
+		if destination == 15 {
+			cpu.WriteCPSR(cpu.ReadSPSR())
+		}
 	}
 	return
 }
@@ -479,6 +502,9 @@ func (b BIC) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	if b.instruction&(1<<20)>>20 == 1 {
 		cpu.SetZ(res == 0)
 		cpu.SetN(op2&(1<<31)>>31 != 0)
+		if rd == 15 {
+			cpu.WriteCPSR(cpu.ReadSPSR())
+		}
 	}
 
 	return
@@ -502,6 +528,9 @@ func (m MVN) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	if m.instruction&(1<<20)>>20 == 1 {
 		cpu.SetZ(val == 0)
 		cpu.SetN(op2&(1<<31)>>31 != 0)
+		if destination == 15 {
+			cpu.WriteCPSR(cpu.ReadSPSR())
+		}
 	}
 
 	return

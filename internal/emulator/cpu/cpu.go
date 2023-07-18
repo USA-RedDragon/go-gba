@@ -126,12 +126,17 @@ func (c *ARM7TDMI) RegisterMMIO(data []byte, address uint32, size uint32) {
 
 func (c *ARM7TDMI) DebugRegisters() string {
 	var ret = ""
-	ret += fmt.Sprintf(" R0: 0x%08X\t R1: 0x%08X\t R2: 0x%08X\t  R3: 0x%08X\n", c.r[0], c.r[1], c.r[2], c.r[3])
-	ret += fmt.Sprintf(" R4: 0x%08X\t R5: 0x%08X\t R6: 0x%08X\t  R7: 0x%08X\n", c.r[4], c.r[5], c.r[6], c.r[7])
-	ret += fmt.Sprintf(" R8: 0x%08X\t R9: 0x%08X\tR10: 0x%08X\t R11: 0x%08X\n", c.r[8], c.r[9], c.r[10], c.r[11])
-	ret += fmt.Sprintf("R12: 0x%08X\t SP: 0x%08X\t LR: 0x%08X\t  PC: 0x%08X\n", c.r[12], c.r[13], c.r[14], c.r[15])
+	ret += fmt.Sprintf(" R0: 0x%08X\t R1: 0x%08X\t R2: 0x%08X\t  R3: 0x%08X\n", c.ReadRegister(0), c.ReadRegister(1), c.ReadRegister(2), c.ReadRegister(3))
+	ret += fmt.Sprintf(" R4: 0x%08X\t R5: 0x%08X\t R6: 0x%08X\t  R7: 0x%08X\n", c.ReadRegister(4), c.ReadRegister(5), c.ReadRegister(6), c.ReadRegister(7))
+	if c.GetThumbMode() {
+		ret += fmt.Sprintf(" R8: 0x%08X\t R9: 0x%08X\tR10: 0x%08X\t R11: 0x%08X\n", c.ReadHighRegister(8-8), c.ReadHighRegister(9-8), c.ReadHighRegister(10-8), c.ReadHighRegister(11-8))
+		ret += fmt.Sprintf("R12: 0x%08X\t SP: 0x%08X\t LR: 0x%08X\t  PC: 0x%08X\n", c.ReadHighRegister(12-8), c.ReadHighRegister(13-8), c.ReadHighRegister(14-8), c.ReadHighRegister(15-8))
+	} else {
+		ret += fmt.Sprintf(" R8: 0x%08X\t R9: 0x%08X\tR10: 0x%08X\t R11: 0x%08X\n", c.ReadRegister(8), c.ReadRegister(9), c.ReadRegister(10), c.ReadRegister(11))
+		ret += fmt.Sprintf("R12: 0x%08X\t SP: 0x%08X\t LR: 0x%08X\t  PC: 0x%08X\n", c.ReadRegister(12), c.ReadRegister(13), c.ReadRegister(14), c.ReadRegister(15))
+	}
 	ret += fmt.Sprintf("%s\n", c.prettyCPSR())
-	if cpuMode(c.r[CPSR_REG]&0x1F) != systemMode && cpuMode(c.r[CPSR_REG]&0x1F) != userMode {
+	if cpuMode(c.ReadRegister(CPSR_REG)&0x1F) != systemMode && cpuMode(c.ReadRegister(CPSR_REG)&0x1F) != userMode {
 		ret += fmt.Sprintf("SPSR: 0x%08X\n", c.ReadSPSR())
 	}
 	return ret
@@ -218,9 +223,9 @@ func (c *ARM7TDMI) Reset() {
 func (c *ARM7TDMI) ReadSPSR() uint32 {
 	switch cpuMode(c.r[CPSR_REG] & 0x1F) {
 	case systemMode:
-		panic("System mode does not have an SPSR")
+		return c.r[CPSR_REG] | (1 << 4)
 	case userMode:
-		panic("User mode does not have an SPSR")
+		return c.r[CPSR_REG] | (1 << 4)
 	case fiqMode:
 		return c.spsr_fiq
 	case irqMode:
@@ -239,9 +244,9 @@ func (c *ARM7TDMI) ReadSPSR() uint32 {
 func (c *ARM7TDMI) WriteSPSR(value uint32) {
 	switch cpuMode(c.r[CPSR_REG] & 0x1F) {
 	case systemMode:
-		panic("System mode does not have an SPSR")
+		c.r[CPSR_REG] = value
 	case userMode:
-		panic("User mode does not have an SPSR")
+		c.r[CPSR_REG] = value
 	case fiqMode:
 		c.spsr_fiq = value
 	case irqMode:
@@ -264,7 +269,70 @@ func (c *ARM7TDMI) ReadHighRegister(reg uint8) uint32 {
 	if reg > 15 {
 		panic(fmt.Sprintf("Invalid register number %d", reg))
 	}
-	return c.r[reg+8]
+	reg += 8
+	switch cpuMode(c.r[CPSR_REG] & 0x1F) {
+	case systemMode:
+		return c.r[reg]
+	case userMode:
+		return c.r[reg]
+	case fiqMode:
+		switch reg {
+		case 8:
+			return c.r8_fiq
+		case 9:
+			return c.r9_fiq
+		case 10:
+			return c.r10_fiq
+		case 11:
+			return c.r11_fiq
+		case 12:
+			return c.r12_fiq
+		case 13:
+			return c.sp_fiq
+		case 14:
+			return c.lr_fiq
+		default:
+			return c.r[reg]
+		}
+	case irqMode:
+		switch reg {
+		case 13:
+			return c.sp_irq
+		case 14:
+			return c.lr_irq
+		default:
+			return c.r[reg]
+		}
+	case supervisorMode:
+		switch reg {
+		case 13:
+			return c.sp_svc
+		case 14:
+			return c.lr_svc
+		default:
+			return c.r[reg]
+		}
+	case abortMode:
+		switch reg {
+		case 13:
+			return c.sp_abt
+		case 14:
+			return c.lr_abt
+		default:
+			return c.r[reg]
+		}
+	case undefinedMode:
+		switch reg {
+		case 13:
+			return c.sp_und
+		case 14:
+			return c.lr_und
+		default:
+			return c.r[reg]
+		}
+	default:
+		panic("Unknown CPU mode")
+	}
 }
 
 func (c *ARM7TDMI) WriteHighRegister(reg uint8, value uint32) {
@@ -274,7 +342,70 @@ func (c *ARM7TDMI) WriteHighRegister(reg uint8, value uint32) {
 	if reg > 15 {
 		panic(fmt.Sprintf("Invalid register number %d", reg))
 	}
-	c.r[reg+8] = value
+	switch cpuMode(c.r[CPSR_REG] & 0x1F) {
+	case systemMode:
+		c.r[reg+8] = value
+	case userMode:
+		c.r[reg+8] = value
+	case fiqMode:
+		switch reg {
+		case 8:
+			c.r8_fiq = value
+		case 9:
+			c.r9_fiq = value
+		case 10:
+			c.r10_fiq = value
+		case 11:
+			c.r11_fiq = value
+		case 12:
+			c.r12_fiq = value
+		case 13:
+			c.sp_fiq = value
+		case 14:
+			c.lr_fiq = value
+		default:
+			c.r[reg+8] = value
+		}
+	case irqMode:
+		switch reg {
+		case 13:
+			c.sp_irq = value
+		case 14:
+			c.lr_irq = value
+		default:
+			c.r[reg+8] = value
+		}
+	case supervisorMode:
+		switch reg {
+		case 13:
+			c.sp_svc = value
+		case 14:
+			c.lr_svc = value
+		default:
+			c.r[reg+8] = value
+		}
+	case abortMode:
+		switch reg {
+		case 13:
+			c.sp_abt = value
+		case 14:
+			c.lr_abt = value
+		default:
+			c.r[reg+8] = value
+		}
+	case undefinedMode:
+		switch reg {
+		case 13:
+			c.sp_und = value
+		case 14:
+			c.lr_und = value
+		default:
+			c.r[reg+8] = value
+		}
+	default:
+		panic("Unknown CPU mode")
+	}
+
 }
 
 func (c *ARM7TDMI) ReadRegister(reg uint8) uint32 {
@@ -555,7 +686,10 @@ func (c *ARM7TDMI) GetMMIO() *memory.MMIO {
 }
 
 func (c *ARM7TDMI) ReadCPSR() uint32 {
-	return c.r[CPSR_REG]
+	cpsr := c.r[CPSR_REG]
+	// Top bit of mode is always 1
+	cpsr |= (1 << 4)
+	return cpsr
 }
 
 func (c *ARM7TDMI) WriteCPSR(value uint32) {
