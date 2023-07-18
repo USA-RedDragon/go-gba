@@ -132,9 +132,9 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 		} else if !isSignExtended && h {
 			return LDRNSH{instruction}
 		} else if isSignExtended && !h {
-			return LDSB{instruction}
+			return LDRSB{instruction}
 		} else {
-			return LDSH{instruction}
+			return LDRSH{instruction}
 		}
 	case instruction&PCRelativeLoadMask == PCRelativeLoadFormat:
 		return LDR{instruction}

@@ -630,20 +630,20 @@ func (c *ARM7TDMI) FlushPipeline() {
 }
 
 func (c *ARM7TDMI) fetchThumb() uint16 {
+	c.r[PC_REG] += 2
+
 	instruction := c.prefetchThumbPipeline[0]
 	c.prefetchThumbPipeline[0] = c.prefetchThumbPipeline[1]
 
 	// Prefetch the next instruction
 	var err error
-	c.prefetchThumbPipeline[1], err = c.virtualMemory.Read16(c.r[PC_REG] + 2)
+	c.prefetchThumbPipeline[1], err = c.virtualMemory.Read16(c.r[PC_REG])
 	if err != nil {
-		panic(fmt.Sprintf("fetchThumb: Error reading instruction at 0x%08X: %v", c.r[PC_REG]+2, err))
+		panic(fmt.Sprintf("fetchThumb: Error reading instruction at 0x%08X: %v", c.r[PC_REG], err))
 	}
 	if c.config.Debug {
-		fmt.Printf("fetchThumb: Prefetching thumb instruction at 0x%08X\n", c.r[PC_REG]+2)
+		fmt.Printf("fetchThumb: Prefetching thumb instruction at 0x%08X\n", c.r[PC_REG])
 	}
-
-	c.r[PC_REG] += 2
 
 	if c.config.Debug {
 		fmt.Printf("fetchThumb: Prefetch: [0x%04x, 0x%04x]\n", c.prefetchThumbPipeline[0], c.prefetchThumbPipeline[1])

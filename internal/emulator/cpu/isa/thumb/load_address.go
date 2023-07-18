@@ -35,9 +35,9 @@ func (a ADDPC) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bits 7-0 are the immediate value
 	imm := (a.instruction & 0xFF) << 2
 
-	fmt.Printf("add r%d, pc, #0x%X\n", rd, imm)
+	fmt.Printf("ADDPC add r%d, pc, #0x%X\n", rd, imm)
 
-	cpu.WriteRegister(rd, cpu.ReadPC()+uint32(imm))
+	cpu.WriteRegister(rd, (cpu.ReadPC()&0xFFFFFFFC)+uint32(imm))
 
 	return
 }

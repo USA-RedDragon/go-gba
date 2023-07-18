@@ -33,17 +33,25 @@ func (c CMP) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("CMP")
 	// Bits 10-8 are the destination register
 	rd := uint8(c.instruction & (1<<10 | 1<<9 | 1<<8) >> 8)
+	rdVal := cpu.ReadRegister(rd)
 	// Bits 7-0 are the immediate value
-	imm := c.instruction & 0xFF
+	imm := uint32(c.instruction & 0xFF)
 
 	fmt.Printf("Destination register: %d\n", rd)
 	fmt.Printf("Immediate value: %d\n", imm)
 
 	// Subtract the immediate value from the destination register
-	res := cpu.ReadRegister(rd) - uint32(imm)
+	res := rdVal - imm
 
+	// Set carry flag if the subtraction would make a positive number.
+	carry := rdVal >= imm
+
+	// Set overflow flag if the subtraction would overflow.
+	overflow := (rdVal^imm)>>31 == 1 && (rdVal^res)>>31 == 1
 	cpu.SetN(res&(1<<31)>>31 != 0)
 	cpu.SetZ(res == 0)
+	cpu.SetV(overflow)
+	cpu.SetC(carry)
 
 	return
 }
@@ -161,21 +169,26 @@ func (s SUB2) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	imm := uint32((s.instruction & (1<<8 | 1<<7 | 1<<6)) >> 6)
 	// Bits 5-3 are the source register
 	rs := uint8((s.instruction & (1<<5 | 1<<4 | 1<<3)) >> 3)
+	rsVal := cpu.ReadRegister(rs)
 	// Bits 2-0 are the destination register
 	rd := uint8((s.instruction & (1<<2 | 1<<1 | 1<<0)))
 
 	// bit 10 == 1 means the operand is an immediate value
 	if s.instruction&(1<<10)>>10 == 1 {
 		fmt.Printf("SUB2 r%d, r%d, #%d\n", rd, rs, imm)
-		cpu.WriteRegister(rd, cpu.ReadRegister(rs)-imm)
 	} else {
 		fmt.Printf("SUB2 r%d, r%d, r%d\n", rd, rs, imm)
-		cpu.WriteRegister(rd, cpu.ReadRegister(rs)-cpu.ReadRegister(rd))
+		imm = cpu.ReadRegister(uint8(imm))
 	}
 
-	// Save condition flags
-	cpu.SetN(cpu.ReadRegister(rd)&(1<<31)>>31 != 0)
-	cpu.SetZ(cpu.ReadRegister(rd) == 0)
+	res := rsVal - imm
+	cpu.WriteRegister(rd, res)
+
+	cpu.SetN(res&(1<<31)>>31 != 0)
+	cpu.SetZ(res == 0)
+	cpu.SetC(rsVal >= imm)
+	cpu.SetV((rsVal^imm)>>31 == 1 && (rsVal^res)>>31 == 1)
+
 	return
 }
 

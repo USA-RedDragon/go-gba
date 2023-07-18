@@ -13,7 +13,33 @@ type ADDH struct {
 func (a ADDH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("ADDH")
 
-	panic("Not implemented")
+	// Bits 7-6 are the hi operand flags
+	hof := a.instruction & (1<<7 | 1<<6) >> 6
+	// Bits 5-3 are the source register
+	rs := uint8(a.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
+	// Bits 2-0 are the destination register
+	rd := uint8(a.instruction & (1<<2 | 1<<1 | 1<<0))
+
+	switch hof {
+	case 0b01:
+		// add Rd, Hs
+		fmt.Printf("add r%d, r%d\n", rd, rs+8)
+		res := cpu.ReadRegister(rd) + cpu.ReadHighRegister(rs)
+		cpu.WriteRegister(rd, res)
+	case 0b10:
+		// add Hd, Rs
+		fmt.Printf("add r%d, r%d\n", rd+8, rs)
+		res := cpu.ReadHighRegister(rd) + cpu.ReadRegister(rs)
+		cpu.WriteHighRegister(rd, res)
+	case 0b11:
+		// add Hd, Hs
+		fmt.Printf("add r%d, r%d\n", rd+8, rs+8)
+		res := cpu.ReadHighRegister(rd) + cpu.ReadHighRegister(rs)
+		cpu.WriteHighRegister(rd, res)
+	default:
+		panic("Invalid hi operand flags")
+	}
+
 	return
 }
 

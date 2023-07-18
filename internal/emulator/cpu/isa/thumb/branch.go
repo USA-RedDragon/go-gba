@@ -92,34 +92,20 @@ func (a BX) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("BX")
 
 	// Bits 7-6 are the hi operand flags
-	hof := a.instruction & (1<<7 | 1<<6) >> 6
 	rshs := uint8(a.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
 
-	if hof == 0b00 {
-		fmt.Printf("Branching to r%d\n", rshs)
-		addr := cpu.ReadRegister(rshs)
-		fmt.Printf("Address: 0x%08X\n", addr)
-		if addr&0b11 != 0 {
-			fmt.Println("Setting THUMB mode")
-			cpu.WritePC(addr - 1)
-			cpu.SetThumbMode(true)
-		} else {
-			cpu.WritePC(addr)
-			cpu.SetThumbMode(false)
-		}
-	} else if hof == 0b01 {
-		fmt.Printf("Branching to r%d\n", rshs+8)
-		addr := cpu.ReadRegister(rshs + 8)
-		fmt.Printf("Address: 0x%08X\n", addr)
-		if addr&0b11 != 0 {
-			fmt.Println("Setting THUMB mode")
-			cpu.WritePC(addr - 1)
-			cpu.SetThumbMode(true)
-		} else {
-			cpu.WritePC(addr)
-			cpu.SetThumbMode(false)
-		}
+	fmt.Printf("BLUG bx r%d\n", rshs)
+
+	addr := cpu.ReadRegister(rshs)
+
+	if addr&1 != 1 {
+		fmt.Println("ARM mode")
+		cpu.SetThumbMode(false)
 	}
+
+	cpu.WritePC(addr)
+
+	repipeline = true
 	return
 }
 

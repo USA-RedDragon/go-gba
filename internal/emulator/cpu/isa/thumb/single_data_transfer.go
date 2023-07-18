@@ -42,13 +42,13 @@ func (l LDRR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	byte := l.instruction&(1<<10)>>10 == 1
 
 	// Bits 8-6 are the offset register
-	offsetRegister := l.instruction & (1<<8 | 1<<7 | 1<<6) >> 6
+	offsetRegister := uint8(l.instruction & (1<<8 | 1<<7 | 1<<6) >> 6)
 
 	// Bits 5-3 are the base register
-	baseRegister := l.instruction & (1<<5 | 1<<4 | 1<<3) >> 3
+	baseRegister := uint8(l.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
 
 	// Bits 2-0 are the destination/source register
-	destinationSourceRegister := l.instruction & (1<<2 | 1<<1 | 1<<0)
+	destinationSourceRegister := uint8(l.instruction & (1<<2 | 1<<1 | 1<<0))
 
 	b := ""
 	if byte {
@@ -56,7 +56,26 @@ func (l LDRR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	}
 
 	fmt.Printf("ldr%s r%d, [r%d, r%d]\n", b, destinationSourceRegister, baseRegister, offsetRegister)
-	panic("Not implemented")
+
+	base := cpu.ReadRegister(baseRegister)
+	offset := cpu.ReadRegister(offsetRegister)
+
+	address := base + offset
+
+	if byte {
+		res, err := cpu.GetMMIO().Read8(address)
+		if err != nil {
+			panic(err)
+		}
+		cpu.WriteRegister(destinationSourceRegister, uint32(res))
+	} else {
+		res, err := cpu.GetMMIO().Read32(address)
+		if err != nil {
+			panic(err)
+		}
+		cpu.WriteRegister(destinationSourceRegister, uint32(res))
+	}
+
 	return
 }
 
@@ -169,13 +188,26 @@ func (l LDRH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	fmt.Printf("ldrh r%d, [r%d, #0x%X]\n", rd, rb, offset)
 
-	// Load the lower 16 bits of the address at rb + offset into rd
-	readHW, err := cpu.GetMMIO().Read16(cpu.ReadRegister(rb) + uint32(offset))
+	addr := cpu.ReadRegister(rb) + uint32(offset)
+
+	// Load the halfword at rb + ro into rd
+	mem, err := cpu.GetMMIO().Read16(addr & 0xFFFFFFFE)
 	if err != nil {
 		panic(err)
 	}
 
-	cpu.WriteRegister(rd, uint32(readHW))
+	if addr&1 == 1 {
+		val := uint32(mem)
+		// Right rotate the halfword by 8 bits
+		is := 8
+		is %= 32
+		tmp0 := (val) >> (is)
+		tmp1 := (val) << (32 - (is))
+		cpu.WriteRegister(rd, uint32(tmp0|tmp1))
+		return
+	}
+
+	cpu.WriteRegister(rd, uint32(mem))
 	return
 }
 
@@ -213,7 +245,7 @@ func (l LDRBImm) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("LDRBImm")
 
 	// Bits 10-6 are the offset
-	offset := uint32(l.instruction&(1<<10|1<<9|1<<8|1<<7|1<<6)>>6) << 1
+	offset := uint32(l.instruction & (1<<10 | 1<<9 | 1<<8 | 1<<7 | 1<<6) >> 6)
 
 	// Bits 5-3 are the base register
 	rb := uint8(l.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
@@ -266,7 +298,7 @@ func (l LDRWImm) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Println("LDRWImm")
 
 	// Bits 10-6 are the offset
-	offset := uint32(l.instruction&(1<<10|1<<9|1<<8|1<<7|1<<6)>>6) << 1
+	offset := uint32(l.instruction&(1<<10|1<<9|1<<8|1<<7|1<<6)>>6) << 2
 
 	// Bits 5-3 are the base register
 	rb := uint8(l.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
@@ -319,6 +351,7 @@ type LDMIA struct {
 func (l LDMIA) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bits 10-8 are the base register
 	rb := uint8(l.instruction & (1<<10 | 1<<9 | 1<<8) >> 8)
+	rbVal := cpu.ReadRegister(rb)
 
 	// Bits 7-0 are the register list
 	registerList := uint16(l.instruction & (1<<7 | 1<<6 | 1<<5 | 1<<4 | 1<<3 | 1<<2 | 1<<1 | 1<<0))
@@ -334,7 +367,14 @@ func (l LDMIA) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	fmt.Printf("ldmia r%d!, {%v}\n", rb, popRegisters)
 
-	address := cpu.ReadRegister(rb)
+	// If the register list is empty, then PC is loaded and add 0x40 to rb
+	if len(popRegisters) == 0 {
+		popRegisters = []uint8{15}
+		cpu.WriteRegister(rb, rbVal+0x40)
+		rb = 15 // Set this to avoid writing to rb twice
+	}
+
+	address := rbVal
 	for _, register := range popRegisters {
 		// Load the word at address into register
 		fmt.Printf("Loading word at 0x%X into r%d\n", address, register)
@@ -342,12 +382,12 @@ func (l LDMIA) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		if err != nil {
 			panic(err)
 		}
-		address += 4
 		cpu.WriteRegister(register, mem)
+		if uint8(register) != rb {
+			address += 4
+			cpu.WriteRegister(rb, address)
+		}
 	}
-
-	// Write the new address back to rb
-	cpu.WriteRegister(rb, address)
 
 	return
 }
@@ -359,6 +399,7 @@ type STMIA struct {
 func (s STMIA) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Bits 10-8 are the base register
 	rb := uint8(s.instruction & (1<<10 | 1<<9 | 1<<8) >> 8)
+	rbVal := cpu.ReadRegister(rb)
 
 	// Bits 7-0 are the register list
 	registerList := uint16(s.instruction & (1<<7 | 1<<6 | 1<<5 | 1<<4 | 1<<3 | 1<<2 | 1<<1 | 1<<0))
@@ -374,20 +415,40 @@ func (s STMIA) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	fmt.Printf("stmia r%d!, {%v}\n", rb, pushRegisters)
 
-	address := cpu.ReadRegister(rb)
+	emptyRlist := false
+	if len(pushRegisters) == 0 {
+		pushRegisters = []uint8{15}
+		cpu.WriteRegister(rb, rbVal+0x40)
+		emptyRlist = true
+	}
 
+	address := rbVal
+	cnt := 0
 	for _, register := range pushRegisters {
 		// Store the word in register into address
 		fmt.Printf("Storing word in r%d into 0x%X\n", register, address)
-		err := cpu.GetMMIO().Write32(address, cpu.ReadRegister(register))
+		regVal := cpu.ReadRegister(register)
+		if emptyRlist {
+			regVal += 2
+		}
+		if uint8(register) == rb {
+			if cnt == 0 {
+				regVal = rbVal
+			} else {
+				regVal = rbVal + uint32(len(pushRegisters))*4
+			}
+		}
+
+		err := cpu.GetMMIO().Write32(address, regVal)
 		if err != nil {
 			panic(err)
 		}
 		address += 4
+		if !emptyRlist {
+			cpu.WriteRegister(rb, address)
+		}
+		cnt++
 	}
-
-	// Write the new address back to rb
-	cpu.WriteRegister(rb, address)
 
 	return
 }
@@ -444,10 +505,23 @@ func (l LDRNSH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	fmt.Printf("ldrh r%d, [r%d, r%d]\n", rd, rb, ro)
 
+	addr := cpu.ReadRegister(rb) + cpu.ReadRegister(ro)
+
 	// Load the halfword at rb + ro into rd
-	mem, err := cpu.GetMMIO().Read16(cpu.ReadRegister(rb) + cpu.ReadRegister(ro))
+	mem, err := cpu.GetMMIO().Read16(addr & 0xFFFFFFFE)
 	if err != nil {
 		panic(err)
+	}
+
+	if addr&1 == 1 {
+		val := uint32(mem)
+		// Right rotate the halfword by 8 bits
+		is := 8
+		is %= 32
+		tmp0 := (val) >> (is)
+		tmp1 := (val) << (32 - (is))
+		cpu.WriteRegister(rd, uint32(tmp0|tmp1))
+		return
 	}
 
 	// Set the upper 16 bits of rd to 0
@@ -456,20 +530,76 @@ func (l LDRNSH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	return
 }
 
-type LDSB struct {
-	instrument uint16
+type LDRSB struct {
+	instruction uint16
 }
 
 // ldrsb signed offset
-func (l LDSB) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
-	panic("LDSB not implemented")
+func (l LDRSB) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
+	// Bits 8-6 are the offset register
+	ro := uint8(l.instruction & (1<<8 | 1<<7 | 1<<6) >> 6)
+	// Bits 5-3 are the base register
+	rb := uint8(l.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
+	// Bits 2-0 are the destination register
+	rd := uint8(l.instruction & (1<<2 | 1<<1 | 1<<0))
+
+	// 	Load sign-extended byte:
+	// Add Ro to base address in Rb. Load bits 0-
+	// 7 of Rd from the resulting address, and set
+	// bits 8-31 of Rd to bit 7.
+
+	fmt.Printf("ldrsb r%d, [r%d, r%d]\n", rd, rb, ro)
+
+	// Load the byte at rb + ro into rd
+	mem, err := cpu.GetMMIO().Read8(cpu.ReadRegister(rb) + cpu.ReadRegister(ro))
+	if err != nil {
+		panic(err)
+	}
+
+	val := int32(mem)
+
+	// Sign extend the byte
+	cpu.WriteRegister(rd, uint32((val<<24)>>24))
+
+	return
 }
 
-type LDSH struct {
+type LDRSH struct {
 	instruction uint16
 }
 
 // ldrsh signed offset
-func (l LDSH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
-	panic("LDSH not implemented")
+func (l LDRSH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
+	// Bits 8-6 are the offset register
+	ro := uint8(l.instruction & (1<<8 | 1<<7 | 1<<6) >> 6)
+	// Bits 5-3 are the base register
+	rb := uint8(l.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
+	// Bits 2-0 are the destination register
+	rd := uint8(l.instruction & (1<<2 | 1<<1 | 1<<0))
+
+	// Load sign-extended halfword:
+	// Add Ro to base address in Rb. Load bits 0-
+	// 15 of Rd from the resulting address, and set
+	// bits 16-31 of Rd to bit 15.
+
+	fmt.Printf("ldrsh r%d, [r%d, r%d]\n", rd, rb, ro)
+
+	addr := cpu.ReadRegister(rb) + cpu.ReadRegister(ro)
+
+	// Load the halfword at rb + ro into rd
+	mem, err := cpu.GetMMIO().Read16(addr)
+	if err != nil {
+		panic(err)
+	}
+
+	val := uint32(mem)
+
+	if addr%2 == 1 { // https://github.com/jsmolka/gba-tests/blob/a6447c5404c8fc2898ddc51f438271f832083b7e/thumb/memory.asm#L207
+		val = ((val & 0xff) << 24) | ((val & 0xff) << 16) | ((val & 0xff) << 8) | val
+	}
+	value := int32(val)
+	value = (value << 16) >> 16
+
+	cpu.WriteRegister(rd, uint32(value))
+	return
 }

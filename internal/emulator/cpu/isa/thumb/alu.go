@@ -163,13 +163,28 @@ func (a ADC) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	// Bits 5-3 are the source register
 	rs := uint8(a.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
+	rsVal := cpu.ReadRegister(rs)
 
 	// Bits 2-0 are the destination register
 	rd := uint8(a.instruction & (1<<2 | 1<<1 | 1<<0))
+	rdVal := cpu.ReadRegister(rd)
 
 	fmt.Printf("adc r%d, r%d\n", rd, rs)
 
-	panic("Not implemented")
+	res := rdVal + rsVal
+	if cpu.GetC() {
+		res++
+	}
+
+	cpu.WriteRegister(rd, res)
+
+	carry := (rdVal>>31)+(rsVal>>31) > (res >> 31)
+	overflow := (rdVal^rsVal)>>31 == 0 && (rdVal^res)>>31 == 1
+	cpu.SetN(res&(1<<31)>>31 != 0)
+	cpu.SetZ(res == 0)
+	cpu.SetV(overflow)
+	cpu.SetC(carry)
+
 	return
 }
 
@@ -182,13 +197,30 @@ func (s SBC) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	// Bits 5-3 are the source register
 	rs := uint8(s.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
+	rsVal := cpu.ReadRegister(rs)
 
 	// Bits 2-0 are the destination register
 	rd := uint8(s.instruction & (1<<2 | 1<<1 | 1<<0))
+	rdVal := cpu.ReadRegister(rd)
 
 	fmt.Printf("sbc r%d, r%d\n", rd, rs)
 
-	panic("Not implemented")
+	diff := rdVal - rsVal
+	if !cpu.GetC() {
+		diff--
+	}
+
+	cpu.WriteRegister(rd, diff)
+
+	// Set carry flag if the subtraction would make a positive number.
+	carry := rdVal >= rsVal
+	// Set overflow flag if the subtraction would overflow.
+	overflow := (rdVal^rsVal)>>31 == 1 && (rdVal^diff)>>31 == 1
+	cpu.SetN(diff&(1<<31)>>31 != 0)
+	cpu.SetZ(diff == 0)
+	cpu.SetV(overflow)
+	cpu.SetC(carry)
+
 	return
 }
 
@@ -266,13 +298,27 @@ func (n NEG) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	// Bits 5-3 are the source register
 	rs := uint8(n.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
+	rsVal := cpu.ReadRegister(rs)
 
 	// Bits 2-0 are the destination register
 	rd := uint8(n.instruction & (1<<2 | 1<<1 | 1<<0))
 
 	fmt.Printf("neg r%d, r%d\n", rd, rs)
 
-	panic("Not implemented")
+	// Reverse subtract 0 from Rn
+	res := 0 - rsVal
+
+	cpu.WriteRegister(rd, res)
+
+	// Set carry flag if the subtraction would make a positive number.
+	carry := 0 >= rsVal
+	// Set overflow flag if the subtraction would overflow.
+	overflow := (0^rsVal)>>31 == 1 && (0^res)>>31 == 1
+	cpu.SetN(res&(1<<31)>>31 != 0)
+	cpu.SetZ(res == 0)
+	cpu.SetV(overflow)
+	cpu.SetC(carry)
+
 	return
 }
 
@@ -285,18 +331,25 @@ func (c CMPALU) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	// Bits 5-3 are the source register
 	rs := uint8(c.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
+	rsVal := cpu.ReadRegister(rs)
 
 	// Bits 2-0 are the destination register
 	rd := uint8(c.instruction & (1<<2 | 1<<1 | 1<<0))
+	rdVal := cpu.ReadRegister(rd)
 
 	fmt.Printf("cmp r%d, r%d\n", rd, rs)
 
-	res := cpu.ReadRegister(rd) - cpu.ReadRegister(rs)
+	res := rdVal - rsVal
 
-	// Update the status registers
-	cpu.SetZ(res == 0)
-	// Set N if the result is negative
+	// Set carry flag if the subtraction would make a positive number.
+	carry := rdVal >= rsVal
+
+	// Set overflow flag if the subtraction would overflow.
+	overflow := (rdVal^rsVal)>>31 == 1 && (rdVal^res)>>31 == 1
 	cpu.SetN(res&(1<<31)>>31 != 0)
+	cpu.SetZ(res == 0)
+	cpu.SetV(overflow)
+	cpu.SetC(carry)
 
 	return
 }
@@ -310,13 +363,23 @@ func (c CMN) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	// Bits 5-3 are the source register
 	rs := uint8(c.instruction & (1<<5 | 1<<4 | 1<<3) >> 3)
+	rsVal := cpu.ReadRegister(rs)
 
 	// Bits 2-0 are the destination register
 	rd := uint8(c.instruction & (1<<2 | 1<<1 | 1<<0))
+	rdVal := cpu.ReadRegister(rd)
 
 	fmt.Printf("cmn r%d, r%d\n", rd, rs)
 
-	panic("Not implemented")
+	res := rdVal + rsVal
+
+	carry := (rdVal>>31)+(rsVal>>31) > (res >> 31)
+	overflow := (rdVal^rsVal)>>31 == 0 && (rdVal^res)>>31 == 1
+	cpu.SetN(res&(1<<31)>>31 != 0)
+	cpu.SetZ(res == 0)
+	cpu.SetV(overflow)
+	cpu.SetC(carry)
+
 	return
 }
 
