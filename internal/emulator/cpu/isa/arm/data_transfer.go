@@ -45,52 +45,37 @@ func (ldr LDR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		}
 	}
 
-	// If the datatype is a byte, check if it's on a word boundary
-	if !word && address%4 == 0 {
-		// On a word boundary, bits 7-0 of the value in memory at address
-		// are moved to the bottom bits of the result register
-		read, err := memory.Read32(address)
+	read := uint32(0)
+	if !word {
+		read8, err := memory.Read8(address)
 		if err != nil {
 			panic(err)
 		}
-		cpu.WriteRegister(rd, read&0xFF)
-	} else if !word && address%4 == 1 {
-		// On a word boundary plus one, bits 15-8 of the value in memory at address
-		// are moved to the bottom bits of the result register
-		read, err := memory.Read32(address)
-		if err != nil {
-			panic(err)
-		}
-		cpu.WriteRegister(rd, (read&0xFF00)>>8)
-	} else if !word && address%4 == 2 {
-		// On a word boundary plus two, bits 23-16 of the value in memory at address
-		// are moved to the bottom bits of the result register
-		read, err := memory.Read32(address)
-		if err != nil {
-			panic(err)
-		}
-		cpu.WriteRegister(rd, (read&0xFF0000)>>16)
-	} else if !word && address%4 == 3 {
-		// On a word boundary plus three, bits 31-24 of the value in memory at address
-		// are moved to the bottom bits of the result register
-		read, err := memory.Read32(address)
-		if err != nil {
-			panic(err)
-		}
-		cpu.WriteRegister(rd, (read&0xFF000000)>>24)
-	} else if word && address%4 != 0 {
-		panic("Unaligned word access")
+		read = uint32(read8)
 	} else {
-		// Otherwise, the value in memory at address is moved to the result register
-		read, err := memory.Read32(address)
+		var err error
+		read, err = memory.Read32(address)
 		if err != nil {
 			panic(err)
 		}
-		cpu.WriteRegister(rd, read)
 	}
-	if !pre || writeback {
-		cpu.WriteRegister(rn, address)
+	cpu.WriteRegister(rd, read)
+
+	if pre {
+		if writeback && rn != rd {
+			cpu.WriteRegister(rn, address)
+		}
+	} else {
+		if up {
+			address += offset
+		} else {
+			address -= offset
+		}
+		if rn != rd {
+			cpu.WriteRegister(rn, address)
+		}
 	}
+
 	if cpu.GetConfig().Debug {
 		fmt.Printf("Address: 0x%X\n", address)
 	}
@@ -110,6 +95,7 @@ func (str STR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	rn := uint8((str.instruction >> 16) & 0xF)
 	rd := uint8((str.instruction >> 12) & 0xF)
+	rdVal := cpu.ReadRegister(rd)
 
 	memory := cpu.GetMMIO()
 
@@ -125,6 +111,9 @@ func (str STR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	if cpu.GetConfig().Debug {
 		fmt.Printf("STR r%d, [r%d, 0x%X]\n", rd, rn, offset)
 	}
+	if rd == 15 {
+		rdVal += 4
+	}
 	address := cpu.ReadRegister(rn)
 	if pre {
 		if up {
@@ -134,40 +123,26 @@ func (str STR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		}
 	}
 
-	existingVal, err := memory.Read32(address)
-	if err != nil {
-		panic(err)
-	}
-
 	// If the datatype is a byte, check if it's on a word boundary
-	if !word && address%4 == 0 {
+	if !word {
 		// On a word boundary, bits 7-0 of the value in the register
 		// are moved to the bottom bits of the memory at address
-		read := cpu.ReadRegister(rd)
-		memory.Write32(address, (existingVal&0xFFFFFF00)|read)
-	} else if !word && address%4 == 1 {
+		memory.Write8(address, uint8(rdVal&0xFF))
+	} else {
 		// On a word boundary plus one, bits 15-8 of the value in the register
 		// are moved to the bottom bits of the memory at address
-		read := cpu.ReadRegister(rd)
-		memory.Write32(address, (existingVal&0xFFFF00FF)|(read<<8))
-	} else if !word && address%4 == 2 {
-		// On a word boundary plus two, bits 23-16 of the value in the register
-		// are moved to the bottom bits of the memory at address
-		read := cpu.ReadRegister(rd)
-		memory.Write32(address, (existingVal&0xFF00FFFF)|(read<<16))
-	} else if !word && address%4 == 3 {
-		// On a word boundary plus three, bits 31-24 of the value in the register
-		// are moved to the bottom bits of the memory at address
-		read := cpu.ReadRegister(rd)
-		memory.Write32(address, (existingVal&0x00FFFFFF)|(read<<24))
-	} else if word && address%4 != 0 {
-		panic("Unaligned word access")
-	} else {
-		// Otherwise, the value in the register is moved to the memory at address
-		read := cpu.ReadRegister(rd)
-		memory.Write32(address, read)
+		memory.Write32(address, rdVal)
 	}
-	if !pre || writeback {
+	if pre {
+		if writeback {
+			cpu.WriteRegister(rn, address)
+		}
+	} else {
+		if up {
+			address += offset
+		} else {
+			address -= offset
+		}
 		cpu.WriteRegister(rn, address)
 	}
 	if cpu.GetConfig().Debug {
