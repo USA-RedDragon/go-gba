@@ -219,6 +219,7 @@ func (h *MMIO) Read16(addr uint32) (uint16, error) {
 
 // Write16 writes a 16-bit value to the MMIO address space.
 func (h *MMIO) Write16(addr uint32, data uint16) error {
+	addr &= ^uint32(1)
 	if (addr >= 0x00004000 && addr <= 0x01FFFFFF) || (addr >= 0x10000000 && addr <= 0xFFFFFFFF) {
 		return nil
 	}
@@ -275,6 +276,7 @@ func (h *MMIO) Read32(addr uint32) (uint32, error) {
 
 // Write32 writes a 32-bit value to the MMIO address space.
 func (h *MMIO) Write32(addr uint32, data uint32) error {
+	addr &= ^uint32(3)
 	if (addr >= 0x00004000 && addr <= 0x01FFFFFF) || (addr >= 0x10000000 && addr <= 0xFFFFFFFF) {
 		return nil
 	}
