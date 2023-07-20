@@ -308,26 +308,70 @@ type LDRSH struct {
 }
 
 func (ldrsh LDRSH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
-	// // Bit 24 == 1 means pre-indexed addressing
-	// pre := ldrsh.instruction&(1<<24)>>24 == 1
+	// Bit 24 == 1 means pre-indexed addressing
+	pre := ldrsh.instruction&(1<<24)>>24 == 1
 	// // Bit 23 == 1 means the offset is added to the base register (up)
-	// up := ldrsh.instruction&(1<<23)>>23 == 1
+	up := ldrsh.instruction&(1<<23)>>23 == 1
 	// // Bit 21 == 1 means the base register is written back to
-	// writeback := ldrsh.instruction&(1<<21)>>21 == 1
+	writeback := ldrsh.instruction&(1<<21)>>21 == 1
 
-	// // Bits 19-16 are the base register
-	// rn := uint8((ldrsh.instruction >> 16) & 0xF)
+	// Bits 19-16 are the base register
+	rn := uint8((ldrsh.instruction >> 16) & 0xF)
 
-	// // Bits 15-12 are the destination register
-	// rd := uint8((ldrsh.instruction >> 12) & 0xF)
+	// Bits 15-12 are the destination register
+	rd := uint8((ldrsh.instruction >> 12) & 0xF)
 
-	// // Bits 11-8 are the offset's high nibble
-	// offsetHigh := uint8((ldrsh.instruction >> 8) & 0xF)
+	// Bits 11-8 are the offset's high nibble
+	offsetHigh := uint8((ldrsh.instruction >> 8) & 0xF)
 
-	// // Bits 3-0 are the offset's low nibble
-	// offsetLow := uint8(ldrsh.instruction & 0xF)
+	// Bits 3-0 are the offset's low nibble
+	offsetLow := uint8(ldrsh.instruction & 0xF)
 
-	panic("LDRSH Not implemented")
+	address := cpu.ReadRegister(rn)
+	if pre {
+		if up {
+			address += uint32(offsetHigh<<4 | offsetLow)
+		} else {
+			address -= uint32(offsetHigh<<4 | offsetLow)
+		}
+	}
+
+	fmt.Printf("ldrsh r%d, [r%d, #%d]\n", rd, rn, offsetHigh<<4|offsetLow)
+
+	halfword, err := cpu.GetMMIO().Read16(address & 0xFFFFFFFE)
+	if err != nil {
+		panic(err)
+	}
+	signedHalfword := int32(int16(halfword))
+
+	if address&1 == 1 {
+		val := int32(signedHalfword)
+		// Right rotate the halfword by 8 bits
+		is := 8
+		is %= 32
+		tmp0 := (val) >> (is)
+		tmp1 := (val) << (32 - (is))
+		cpu.WriteRegister(rd, uint32(tmp0|tmp1))
+	} else {
+		cpu.WriteRegister(rd, uint32(signedHalfword))
+	}
+
+	if pre {
+		if writeback && rn != rd {
+			cpu.WriteRegister(rn, address)
+		}
+	} else {
+		if up {
+			address += uint32(offsetHigh<<4 | offsetLow)
+		} else {
+			address -= uint32(offsetHigh<<4 | offsetLow)
+		}
+		if rn != rd {
+			cpu.WriteRegister(rn, address)
+		}
+	}
+
+	return
 }
 
 type LDRSB struct {
@@ -335,25 +379,75 @@ type LDRSB struct {
 }
 
 func (ldrsb LDRSB) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
-	// // Bit 24 == 1 means pre-indexed addressing
-	// pre := ldrsb.instruction&(1<<24)>>24 == 1
-	// // Bit 23 == 1 means the offset is added to the base register (up)
-	// up := ldrsb.instruction&(1<<23)>>23 == 1
-	// // Bit 21 == 1 means the base register is written back to
-	// writeback := ldrsb.instruction&(1<<21)>>21 == 1
+	// Bit 24 == 1 means pre-indexed addressing
+	pre := ldrsb.instruction&(1<<24)>>24 == 1
+	// Bit 23 == 1 means the offset is added to the base register (up)
+	up := ldrsb.instruction&(1<<23)>>23 == 1
+	// Bit 21 == 1 means the base register is written back to
+	writeback := ldrsb.instruction&(1<<21)>>21 == 1
 
-	// // Bits 19-16 are the base register
-	// rn := uint8((ldrsb.instruction >> 16) & 0xF)
+	// Bits 19-16 are the base register
+	rn := uint8((ldrsb.instruction >> 16) & 0xF)
 
-	// // Bits 15-12 are the destination register
-	// rd := uint8((ldrsb.instruction >> 12) & 0xF)
+	// Bits 15-12 are the destination register
+	rd := uint8((ldrsb.instruction >> 12) & 0xF)
 
-	// // Bits 11-8 are the offset's high nibble
-	// offsetHigh := uint8((ldrsb.instruction >> 8) & 0xF)
+	// Bits 11-8 are the offset's high nibble
+	offsetHigh := uint8((ldrsb.instruction >> 8) & 0xF)
 
-	// // Bits 3-0 are the offset's low nibble
-	// offsetLow := uint8(ldrsb.instruction & 0xF)
-	panic("LDRSB Not implemented")
+	// Bits 3-0 are the offset's low nibble
+	offsetLow := uint8(ldrsb.instruction & 0xF)
+
+	address := cpu.ReadRegister(rn)
+	if pre {
+		if up {
+			address += uint32(offsetHigh<<4 | offsetLow)
+		} else {
+			address -= uint32(offsetHigh<<4 | offsetLow)
+		}
+	}
+
+	fmt.Printf("ldrsb r%d, [r%d, #%d]\n", rd, rn, offsetHigh<<4|offsetLow)
+
+	b, err := cpu.GetMMIO().Read8(address)
+	if err != nil {
+		panic(err)
+	}
+	signedByte := int32(int8(b))
+
+	cpu.WriteRegister(rd, uint32(signedByte))
+
+	if pre {
+		if writeback && rn != rd {
+			cpu.WriteRegister(rn, address)
+		}
+	} else {
+		if up {
+			address += uint32(offsetHigh<<4 | offsetLow)
+		} else {
+			address -= uint32(offsetHigh<<4 | offsetLow)
+		}
+		if rn != rd {
+			cpu.WriteRegister(rn, address)
+		}
+	}
+
+	if pre {
+		if writeback && rn != rd {
+			cpu.WriteRegister(rn, address)
+		}
+	} else {
+		if up {
+			address += uint32(offsetHigh<<4 | offsetLow)
+		} else {
+			address -= uint32(offsetHigh<<4 | offsetLow)
+		}
+		if rn != rd {
+			cpu.WriteRegister(rn, address)
+		}
+	}
+
+	return
 }
 
 type LDRH struct {
@@ -394,20 +488,36 @@ func (ldrh LDRH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	}
 
 	// Load halfword from memory
-	halfword, err := cpu.GetMMIO().Read16(address)
+	halfword, err := cpu.GetMMIO().Read16(address & 0xFFFFFFFE)
 	if err != nil {
 		panic(err)
 	}
 
-	cpu.WriteRegister(rd, uint32(halfword))
+	if address&1 == 1 {
+		val := uint32(halfword)
+		// Right rotate the halfword by 8 bits
+		is := 8
+		is %= 32
+		tmp0 := (val) >> (is)
+		tmp1 := (val) << (32 - (is))
+		cpu.WriteRegister(rd, uint32(tmp0|tmp1))
+	} else {
+		cpu.WriteRegister(rd, uint32(halfword))
+	}
 
-	if !pre || writeback {
+	if pre {
+		if writeback && rn != rd {
+			cpu.WriteRegister(rn, address)
+		}
+	} else {
 		if up {
 			address += uint32(offsetHigh<<4 | offsetLow)
 		} else {
 			address -= uint32(offsetHigh<<4 | offsetLow)
 		}
-		cpu.WriteRegister(rn, address)
+		if rn != rd {
+			cpu.WriteRegister(rn, address)
+		}
 	}
 
 	return
@@ -498,6 +608,9 @@ func (strh STRH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		} else {
 			address -= offset
 		}
+		if writeback {
+			cpu.WriteRegister(rn, address)
+		}
 	}
 
 	if cpu.GetConfig().Debug {
@@ -513,9 +626,6 @@ func (strh STRH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		} else {
 			address -= offset
 		}
-	}
-
-	if writeback || !pre {
 		cpu.WriteRegister(rn, address)
 	}
 
@@ -543,7 +653,59 @@ type LDRHRegisterOffset struct {
 }
 
 func (ldrh LDRHRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
-	panic("LDRHRegisterOffset Not implemented")
+	// Bit 24 == 1 means pre-indexed addressing
+	pre := ldrh.instruction&(1<<24)>>24 == 1
+	// Bit 23 == 1 means the offset is added to the base register (up)
+	up := ldrh.instruction&(1<<23)>>23 == 1
+	// Bit 21 == 1 means the base register is written back to
+	writeback := ldrh.instruction&(1<<21)>>21 == 1
+
+	// Bits 19-16 are the base register
+	rn := uint8((ldrh.instruction >> 16) & 0xF)
+
+	// Bits 15-12 are the destination register
+	rd := uint8((ldrh.instruction >> 12) & 0xF)
+
+	// Bits 3-0 are the offset register
+	rm := uint8(ldrh.instruction & 0xF)
+
+	offset := cpu.ReadRegister(rm)
+
+	address := cpu.ReadRegister(rn)
+	if pre {
+		if up {
+			address += offset
+		} else {
+			address -= offset
+		}
+	}
+
+	fmt.Printf("ldrh r%d, [r%d, r%d]  # 0x%08x\n", rd, rn, rm, address)
+
+	// Load halfword from memory
+	halfword, err := cpu.GetMMIO().Read16(address)
+	if err != nil {
+		panic(err)
+	}
+
+	cpu.WriteRegister(rd, uint32(halfword))
+
+	if pre {
+		if writeback && rn != rd {
+			cpu.WriteRegister(rn, address)
+		}
+	} else {
+		if up {
+			address += offset
+		} else {
+			address -= offset
+		}
+		if rn != rd {
+			cpu.WriteRegister(rn, address)
+		}
+	}
+
+	return
 }
 
 type STRSHRegisterOffset struct {
@@ -592,6 +754,9 @@ func (strh STRHRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool, cyc
 		} else {
 			address -= offset
 		}
+		if writeback {
+			cpu.WriteRegister(rn, address)
+		}
 	}
 
 	if cpu.GetConfig().Debug {
@@ -607,9 +772,6 @@ func (strh STRHRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool, cyc
 		} else {
 			address -= offset
 		}
-	}
-
-	if writeback || !pre {
 		cpu.WriteRegister(rn, address)
 	}
 
