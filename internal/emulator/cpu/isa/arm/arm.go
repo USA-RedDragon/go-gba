@@ -146,6 +146,22 @@ func matchSingleDataSwap(instruction uint32) isa.Instruction {
 
 func matchMultiplyLong(instruction uint32) isa.Instruction {
 	fmt.Println("Multiply Long")
+	// Bits 22 and 21 are the U and A flags, unsigned and accumulate
+	ua := (instruction >> 21) & 0b11
+	switch ua {
+	case 0b00:
+		// unsigned, multiply only
+		return UMULL{instruction}
+	case 0b01:
+		// unsigned, multiply and accumulate
+		return UMLAL{instruction}
+	case 0b10:
+		// signed, multiply only
+		return SMULL{instruction}
+	case 0b11:
+		// signed, multiply and accumulate
+		return SMLAL{instruction}
+	}
 	return nil
 }
 
