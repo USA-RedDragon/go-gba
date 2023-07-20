@@ -446,8 +446,10 @@ func (o ORR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	cpu.WriteRegister(rd, res)
 
-	cpu.SetN(res&(1<<31)>>31 != 0)
-	cpu.SetZ(res == 0)
+	if o.instruction&(1<<20)>>20 == 1 {
+		cpu.SetN(res&(1<<31)>>31 != 0)
+		cpu.SetZ(res == 0)
+	}
 
 	return
 }
