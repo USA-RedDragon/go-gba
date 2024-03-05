@@ -1,6 +1,6 @@
 module github.com/USA-RedDragon/go-gba
 
-go 1.22.0
+go 1.22.1
 
 require (
 	github.com/hajimehoshi/ebiten/v2 v2.6.5
