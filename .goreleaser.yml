@@ -1,0 +1,31 @@
+---
+project_name: go-gba
+
+release:
+  extra_files:
+    - glob: ./LICENSE
+  github:
+    owner: USA-RedDragon
+    name: "{{ .ProjectName }}"
+
+builds:
+  - main: .
+    binary: "{{ .ProjectName }}"
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=1
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .ShortCommit }}
+    flags:
+      - -trimpath
+
+milestones:
+  - close: true

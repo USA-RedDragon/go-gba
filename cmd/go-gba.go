@@ -16,9 +16,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func New() *cobra.Command {
+func New(version, commit string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "go-gba [-b gba_bios.bin] [-r path to ROM]",
+		Use:     "go-gba [-b gba_bios.bin] [-r path to ROM]",
+		Version: fmt.Sprintf("%s - %s", version, commit),
+		Annotations: map[string]string{
+			"version": version,
+			"commit":  commit,
+		},
 		RunE:              run,
 		SilenceErrors:     true,
 		DisableAutoGenTag: true,
@@ -88,6 +93,7 @@ func runComparer(cmd *cobra.Command) error {
 }
 
 func run(cmd *cobra.Command, args []string) error {
+	fmt.Printf("go-gba %s-%s\n", cmd.Annotations["version"], cmd.Annotations["commit"])
 	diff, err := cmd.Flags().GetBool("diff")
 	if err != nil {
 		return err
