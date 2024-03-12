@@ -27,6 +27,7 @@ func (m MLA) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	rm := uint8(m.instruction & 0x0000000F)
 
 	if cpu.GetConfig().Debug {
+		//nolint:golint,dupword
 		fmt.Printf("mla r%d, r%d, r%d, r%d\n", rd, rm, rs, rn)
 	}
 
@@ -65,6 +66,7 @@ func (m MUL) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	rm := uint8(m.instruction & 0x0000000F)
 
 	if cpu.GetConfig().Debug {
+		//nolint:golint,dupword
 		fmt.Printf("mul r%d, r%d, r%d\n", rd, rm, rs)
 	}
 

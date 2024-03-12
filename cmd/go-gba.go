@@ -11,7 +11,6 @@ import (
 	"github.com/USA-RedDragon/go-gba/internal/config"
 	"github.com/USA-RedDragon/go-gba/internal/emulator"
 	"github.com/USA-RedDragon/go-gba/internal/emulator/cpu"
-
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/spf13/cobra"
 )
@@ -72,10 +71,9 @@ func runComparer(cmd *cobra.Command) error {
 					// mgba PC will be 2 bytes ahead of ours
 					if mgba.GetRegister(i)-2 == c.ReadRegister(uint8(i)) {
 						continue
-					} else {
-						fmt.Printf("Register %d: %08x != %08x\n", i, mgba.GetRegister(i), c.ReadRegister(uint8(i)))
-						return nil
 					}
+					fmt.Printf("Register %d: %08x != %08x\n", i, mgba.GetRegister(i), c.ReadRegister(uint8(i)))
+					return nil
 				}
 				fmt.Printf("Register %d: %08x != %08x\n", i, mgba.GetRegister(i), c.ReadRegister(uint8(i)))
 				return nil
@@ -87,12 +85,10 @@ func runComparer(cmd *cobra.Command) error {
 		return err
 	}
 
-	mgba.Wait()
-
-	return nil
+	return mgba.Wait()
 }
 
-func run(cmd *cobra.Command, args []string) error {
+func run(cmd *cobra.Command, _ []string) error {
 	fmt.Printf("go-gba %s-%s\n", cmd.Annotations["version"], cmd.Annotations["commit"])
 	diff, err := cmd.Flags().GetBool("diff")
 	if err != nil {
@@ -126,35 +122,30 @@ func run(cmd *cobra.Command, args []string) error {
 		c := cpu.NewARM7TDMI(config.GetConfig(cmd))
 		c.Run()
 		return nil
+	}
+	config := config.GetConfig(cmd)
+
+	emu := emulator.New(config)
+	go func() {
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, os.Interrupt)
+		for range ch {
+			fmt.Println("Exiting")
+			emu.Stop()
+		}
+	}()
+
+	ebiten.SetWindowSize(int(config.Scale*240), int(config.Scale*160))
+	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+	ebiten.SetFullscreen(config.Fullscreen)
+	ebiten.SetScreenClearedEveryFrame(true)
+
+	if config.ROMPath != "" {
+		name := strings.TrimSuffix(filepath.Base(config.ROMPath), filepath.Ext(config.ROMPath))
+		ebiten.SetWindowTitle(name + " | go-gba")
 	} else {
-		config := config.GetConfig(cmd)
-
-		emu := emulator.New(config)
-		go func() {
-			ch := make(chan os.Signal, 1)
-			signal.Notify(ch, os.Interrupt)
-			for range ch {
-				fmt.Println("Exiting")
-				emu.Stop()
-			}
-		}()
-
-		ebiten.SetWindowSize(int(config.Scale*240), int(config.Scale*160))
-		ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
-		ebiten.SetFullscreen(config.Fullscreen)
-		ebiten.SetScreenClearedEveryFrame(true)
-
-		if config.ROMPath != "" {
-			name := strings.TrimSuffix(filepath.Base(config.ROMPath), filepath.Ext(config.ROMPath))
-			ebiten.SetWindowTitle(name + " | go-gba")
-		} else {
-			ebiten.SetWindowTitle("go-gba")
-		}
-
-		if err := ebiten.RunGame(emu); err != nil {
-			return err
-		}
+		ebiten.SetWindowTitle("go-gba")
 	}
 
-	return nil
+	return ebiten.RunGame(emu)
 }

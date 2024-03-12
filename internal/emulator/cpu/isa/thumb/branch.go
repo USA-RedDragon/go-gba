@@ -75,9 +75,8 @@ func (a B) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		if offset == 0 {
 			repipeline = true
 			return
-		} else {
-			cpu.WritePC(cpu.ReadPC() + uint32(offset))
 		}
+		cpu.WritePC(cpu.ReadPC() + uint32(offset))
 	} else {
 		fmt.Println("Branch condition not met")
 	}
@@ -120,10 +119,10 @@ func (a LBL) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	low := a.instruction&(1<<11)>>11 == 1
 
 	// Bits 10-0 are the offset
-	offset := uint16(a.instruction & 0x7FF)
+	offset := a.instruction & 0x7FF
 
 	if low {
-		offset = offset << 1
+		offset <<= 1
 		fmt.Println("bl Low offset")
 		// Take the LR
 		lr := cpu.ReadLR()
@@ -135,7 +134,7 @@ func (a LBL) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		// Set bit 0 of the LR to 1
 		cpu.WriteLR((cpu.ReadLR() | 1) - 2)
 	} else {
-		offset = offset << 12
+		offset <<= 12
 		signedOffset := int16(offset)
 		fmt.Println("bl High offset")
 		fmt.Printf("Adding %d to PC (%08X)\n", signedOffset, cpu.ReadPC())

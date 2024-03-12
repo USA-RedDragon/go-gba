@@ -48,6 +48,7 @@ const (
 	LongBranchWithLinkFormat                   uint16 = 0b1111_0000_0000_0000
 )
 
+//nolint:golint,gocyclo
 func DecodeInstruction(instruction uint16) isa.Instruction {
 	// This function will check masks against the instruction to determine which
 	// type of operation it is. Then, the opcode will be used to determine which
@@ -64,9 +65,8 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 		ldr := instruction&(1<<11)>>11 == 1
 		if ldr {
 			return LDMIA{instruction}
-		} else {
-			return STMIA{instruction}
 		}
+		return STMIA{instruction}
 	case instruction&LongBranchWithLinkMask == LongBranchWithLinkFormat:
 		return LBL{instruction}
 	case instruction&AddOffsetToStackPointerMask == AddOffsetToStackPointerFormat:
@@ -75,33 +75,29 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 		push := instruction&(1<<11)>>11 == 0
 		if push {
 			return PUSH{instruction}
-		} else {
-			return POP{instruction}
 		}
+		return POP{instruction}
 	case instruction&LoadStoreHalfwordMask == LoadStoreHalfwordFormat:
 		// Bit 11 = 1 for LDRH, 0 for STRH
 		ldr := instruction&(1<<11)>>11 == 1
 		if ldr {
 			return LDRH{instruction}
-		} else {
-			return STRH{instruction}
 		}
+		return STRH{instruction}
 	case instruction&SPRelativeLoadStoreMask == SPRelativeLoadStoreFormat:
 		// Bit 11 == 1 for LDRPC, 0 for STRPC
 		ldr := instruction&(1<<11)>>11 == 1
 		if ldr {
 			return LDRSP{instruction}
-		} else {
-			return STRSP{instruction}
 		}
+		return STRSP{instruction}
 	case instruction&LoadAddressMask == LoadAddressFormat:
 		// Bit 11 = 1 for SP, 0 for PC
 		sp := instruction&(1<<11)>>11 == 1
 		if sp {
 			return ADDSP{instruction}
-		} else {
-			return ADDPC{instruction}
 		}
+		return ADDPC{instruction}
 	case instruction&LoadStoreWithImmediateOffsetMask == LoadStoreWithImmediateOffsetFormat:
 		// Bit 12 == 1 for LDRImmB, 0 for LDRImmW
 		isByte := instruction&(1<<12)>>12 == 1
@@ -110,16 +106,13 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 		if isByte {
 			if ldr {
 				return LDRBImm{instruction}
-			} else {
-				return STRBImm{instruction}
 			}
-		} else {
-			if ldr {
-				return LDRWImm{instruction}
-			} else {
-				return STRWImm{instruction}
-			}
+			return STRBImm{instruction}
 		}
+		if ldr {
+			return LDRWImm{instruction}
+		}
+		return STRWImm{instruction}
 	case instruction&LoadStoreWithRegisterOffsetMask == LoadStoreWithRegisterOffsetFormat:
 		return matchLoadStoreWithRegisterOffset(instruction)
 	case instruction&LoadStoreSignExtendedByteHalfwordMask == LoadStoreSignExtendedByteHalfwordFormat:
@@ -127,13 +120,14 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 		h := instruction&(1<<11)>>11 == 1
 		// Bit 10 == 1 for sign extended, 0 for not
 		isSignExtended := instruction&(1<<10)>>10 == 1
-		if !isSignExtended && !h {
+		switch {
+		case !isSignExtended && !h:
 			return STRNSH{instruction}
-		} else if !isSignExtended && h {
+		case !isSignExtended && h:
 			return LDRNSH{instruction}
-		} else if isSignExtended && !h {
+		case isSignExtended && !h:
 			return LDRSB{instruction}
-		} else {
+		case isSignExtended && h:
 			return LDRSH{instruction}
 		}
 	case instruction&PCRelativeLoadMask == PCRelativeLoadFormat:
@@ -207,9 +201,8 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 		subtract := instruction&(1<<9)>>9 == 1
 		if subtract {
 			return SUB2{instruction}
-		} else {
-			return ADD2{instruction}
 		}
+		return ADD2{instruction}
 	case instruction&MoveShiftedRegisterMask == MoveShiftedRegisterFormat:
 		// Bits 12-11 are the opcode
 		op := instruction & (1<<12 | 1<<11) >> 11
@@ -226,9 +219,10 @@ func DecodeInstruction(instruction uint16) isa.Instruction {
 	default:
 		panic(fmt.Sprintf("Unknown THUMB instruction: %016b", instruction))
 	}
+	return nil
 }
 
-func matchSoftwareInterrupt(instruction uint16) isa.Instruction {
+func matchSoftwareInterrupt(_ uint16) isa.Instruction {
 	fmt.Println("SoftwareInterrupt")
 	return nil
 }
@@ -238,7 +232,6 @@ func matchLoadStoreWithRegisterOffset(instruction uint16) isa.Instruction {
 	load := instruction&(1<<11)>>11 == 1
 	if load {
 		return LDRR{instruction}
-	} else {
-		return STRR{instruction}
 	}
+	return STRR{instruction}
 }

@@ -7,8 +7,8 @@ import (
 func (p *PPU) renderMode3() *image.RGBA {
 	// Convert vram contents from 16-bit pixels to 8-bit pixels (RGBA)
 	// RGBA bitmap
-	var bitmap [NUM_PIXELS * 4]byte
-	for i := 0; i < NUM_PIXELS*2; i += 2 {
+	var bitmap [NumPixels * 4]byte
+	for i := 0; i < NumPixels*2; i += 2 {
 		pixel := uint16(p.vRAM[i+1])<<8 | uint16(p.vRAM[i])
 		// Convert XBGR1555 to 32-bit RGBA
 		destIndex := i * 2
@@ -40,15 +40,15 @@ func (p *PPU) renderMode4() *image.RGBA {
 		startAddr = 0xA000
 	}
 
-	bitmap := make([]byte, NUM_PIXELS*4)
+	bitmap := make([]byte, NumPixels*4)
 	// Each pixel is 8 bits
-	for i := 0; i < NUM_PIXELS; i++ {
-		paletteRamOffset := p.vRAM[startAddr+uint32(i)]
-		paletteRamOffset *= 2
+	for i := 0; i < NumPixels; i++ {
+		paletteRAMOffset := p.vRAM[startAddr+uint32(i)]
+		paletteRAMOffset *= 2
 		destIndex := i * 4
 		// The value at the paletteRamAddr is a 16-bit color
 		// Convert XBGR1555 to 32-bit RGBA
-		pixel := uint16(p.paletteRAM[int(paletteRamOffset)+1])<<8 | uint16(p.paletteRAM[int(paletteRamOffset)])
+		pixel := uint16(p.paletteRAM[int(paletteRAMOffset)+1])<<8 | uint16(p.paletteRAM[int(paletteRAMOffset)])
 
 		bitmap[destIndex] = byte((pixel&0x1F)<<3 | ((pixel & 0x1F) >> 2))                 // Red
 		bitmap[destIndex+1] = byte(((pixel>>5)&0x1F)<<3 | (((pixel >> 5) & 0x1F) >> 2))   // Green

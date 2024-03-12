@@ -55,7 +55,7 @@ func (e *Emulator) Draw(screen *ebiten.Image) {
 	// ebitenutil.DebugPrint(screen, e.cpu.DebugRegisters())
 }
 
-func (e *Emulator) Layout(outsideWidth, outsideHeight int) (int, int) {
+func (e *Emulator) Layout(_, _ int) (int, int) {
 	return int(e.config.Scale * 240), int(e.config.Scale * 160)
 }
 

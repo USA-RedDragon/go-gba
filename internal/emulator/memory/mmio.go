@@ -32,27 +32,29 @@ func (h *MMIO) checkWritable(addr uint32) bool {
 	// Addresses 0x0C000000 - 0x0DFFFFFF are not writable (Game Pak ROM/FlashROM - waitstate 2)
 	// Addresses 0x0E000000 - 0x0E00FFFF are writable (Game Pak SRAM)
 	writable := true
-	if addr >= 0x00000000 && addr < 0x00004000 {
+	switch {
+	//nolint:golint,staticcheck
+	case addr >= 0x00000000 && addr < 0x00004000:
 		writable = false
-	} else if addr >= 0x02000000 && addr < 0x02040000 {
+	case addr >= 0x02000000 && addr < 0x02040000:
 		writable = true
-	} else if addr >= 0x03000000 && addr < 0x03008000 {
+	case addr >= 0x03000000 && addr < 0x03008000:
 		writable = true
-	} else if addr >= 0x04000000 && addr < 0x04000400 {
+	case addr >= 0x04000000 && addr < 0x04000400:
 		writable = true
-	} else if addr >= 0x05000000 && addr < 0x05000400 {
+	case addr >= 0x05000000 && addr < 0x05000400:
 		writable = true
-	} else if addr >= 0x06000000 && addr < 0x06018000 {
+	case addr >= 0x06000000 && addr < 0x06018000:
 		writable = true
-	} else if addr >= 0x07000000 && addr < 0x07000400 {
+	case addr >= 0x07000000 && addr < 0x07000400:
 		writable = true
-	} else if addr >= 0x08000000 && addr < 0x0A000000 {
+	case addr >= 0x08000000 && addr < 0x0A000000:
 		writable = false
-	} else if addr >= 0x0A000000 && addr < 0x0C000000 {
+	case addr >= 0x0A000000 && addr < 0x0C000000:
 		writable = false
-	} else if addr >= 0x0C000000 && addr < 0x0E000000 {
+	case addr >= 0x0C000000 && addr < 0x0E000000:
 		writable = false
-	} else if addr >= 0x0E000000 && addr < 0x0E010000 {
+	case addr >= 0x0E000000 && addr < 0x0E010000:
 		writable = true
 	}
 	return writable
@@ -132,25 +134,26 @@ func (h *MMIO) mapMemory(addr uint32) uint32 {
 func (h *MMIO) findMMIOIndex(addr *uint32) (int, error) {
 	*addr = h.mapMemory(*addr)
 
-	if *addr >= 0x0E000000 && *addr <= 0x0E00FFFF {
+	switch {
+	case *addr >= 0x0E000000 && *addr <= 0x0E00FFFF:
 		return 9, nil
-	} else if *addr >= 0x08000000 && *addr <= 0x09FFFFFF {
+	case *addr >= 0x08000000 && *addr <= 0x09FFFFFF:
 		return 8, nil
-	} else if *addr >= 0x07000000 && *addr <= 0x070003FF {
+	case *addr >= 0x07000000 && *addr <= 0x070003FF:
 		return 7, nil
-	} else if *addr >= 0x06000000 && *addr <= 0x06017FFF {
+	case *addr >= 0x06000000 && *addr <= 0x06017FFF:
 		return 6, nil
-	} else if *addr >= 0x05000000 && *addr <= 0x050003FF {
+	case *addr >= 0x05000000 && *addr <= 0x050003FF:
 		return 5, nil
-	} else if *addr >= 0x04000410 && *addr <= 0x04000411 {
+	case *addr >= 0x04000410 && *addr <= 0x04000411:
 		return 4, nil
-	} else if *addr >= 0x04000000 && *addr <= 0x040003FE {
+	case *addr >= 0x04000000 && *addr <= 0x040003FE:
 		return 3, nil
-	} else if *addr >= 0x03000000 && *addr <= 0x03007FFF {
+	case *addr >= 0x03000000 && *addr <= 0x03007FFF:
 		return 2, nil
-	} else if *addr >= 0x02000000 && *addr <= 0x0203FFFF {
+	case *addr >= 0x02000000 && *addr <= 0x0203FFFF:
 		return 1, nil
-	} else if *addr < 0x00003FFF {
+	case *addr < 0x00003FFF:
 		return 0, nil
 	}
 
@@ -229,7 +232,7 @@ func (h *MMIO) Write16(addr uint32, data uint16) error {
 	}
 	if !h.checkWritable(addr) {
 		panic(fmt.Errorf("MMIO address %08x not writable", addr))
-		return fmt.Errorf("MMIO address %08x not writable", addr)
+		// return fmt.Errorf("MMIO address %08x not writable", addr)
 	}
 	if h.Config.Debug {
 		fmt.Printf("MMIO write: 0x%08x 0x%04x\n", addr, data)

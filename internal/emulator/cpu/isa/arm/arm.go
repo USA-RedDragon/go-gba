@@ -89,9 +89,8 @@ func DecodeInstruction(instruction uint32) isa.Instruction {
 		accumulate := (instruction & (1 << 21)) != 0
 		if accumulate {
 			return MLA{instruction}
-		} else {
-			return MUL{instruction}
 		}
+		return MUL{instruction}
 	case instruction&MultiplyLongMask == MultiplyLongFormat:
 		return matchMultiplyLong(instruction)
 	case instruction&HalfwordDataTransferRegisterOffsetMask == HalfwordDataTransferRegisterOffsetFormat:
@@ -116,13 +115,11 @@ func matchBlockDataTransfer(instruction uint32) isa.Instruction {
 
 	if load {
 		return LDM{instruction}
-	} else {
-		return STM{instruction}
 	}
-	return nil
+	return STM{instruction}
 }
 
-func matchUndefined(instruction uint32) isa.Instruction {
+func matchUndefined(_ uint32) isa.Instruction {
 	fmt.Println("Undefined")
 	return nil
 }
@@ -134,12 +131,11 @@ func matchSingleDataTransfer(instruction uint32) isa.Instruction {
 
 	if load {
 		return LDR{instruction}
-	} else {
-		return STR{instruction}
 	}
+	return STR{instruction}
 }
 
-func matchSingleDataSwap(instruction uint32) isa.Instruction {
+func matchSingleDataSwap(_ uint32) isa.Instruction {
 	fmt.Println("Single Data Swap")
 	return nil
 }
@@ -179,32 +175,26 @@ func matchHalfwordDataTransferRegisterOffset(instruction uint32) isa.Instruction
 		if s {
 			if h {
 				return LDRSHRegisterOffset{instruction}
-			} else {
-				return LDRSBRegisterOffset{instruction}
 			}
-		} else {
-			if h {
-				return LDRHRegisterOffset{instruction}
-			} else {
-				// SWP instruction
-				panic("SWP instruction not implemented")
-			}
+			return LDRSBRegisterOffset{instruction}
 		}
+		if h {
+			return LDRHRegisterOffset{instruction}
+		}
+		// SWP instruction
+		panic("SWP instruction not implemented")
 	} else {
 		if s {
 			if h {
 				return STRSHRegisterOffset{instruction}
-			} else {
-				return STRSBRegisterOffset{instruction}
 			}
-		} else {
-			if h {
-				return STRHRegisterOffset{instruction}
-			} else {
-				// SWP instruction
-				panic("SWP instruction not implemented")
-			}
+			return STRSBRegisterOffset{instruction}
 		}
+		if h {
+			return STRHRegisterOffset{instruction}
+		}
+		// SWP instruction
+		panic("SWP instruction not implemented")
 	}
 }
 
@@ -222,32 +212,26 @@ func matchHalfwordDataTransferImmediateOffset(instruction uint32) isa.Instructio
 		if s {
 			if h {
 				return LDRSH{instruction}
-			} else {
-				return LDRSB{instruction}
 			}
-		} else {
-			if h {
-				return LDRH{instruction}
-			} else {
-				// SWP instruction
-				panic("SWP instruction not implemented")
-			}
+			return LDRSB{instruction}
 		}
+		if h {
+			return LDRH{instruction}
+		}
+		// SWP instruction
+		panic("SWP instruction not implemented")
 	} else {
 		if s {
 			if h {
 				return STRSH{instruction}
-			} else {
-				return STRSB{instruction}
 			}
-		} else {
-			if h {
-				return STRH{instruction}
-			} else {
-				// SWP instruction
-				panic("SWP instruction not implemented")
-			}
+			return STRSB{instruction}
 		}
+		if h {
+			return STRH{instruction}
+		}
+		// SWP instruction
+		panic("SWP instruction not implemented")
 	}
 }
 
@@ -292,19 +276,7 @@ func matchDataProcessing(instruction uint32) isa.Instruction {
 	}
 }
 
-func unshiftImmediate(instruction uint32) (uint32, bool) {
-	// Rotate right by 2 * rotate_imm
-	carry := false
-
-	rotate := (instruction & 0x00000F00) >> 8
-	imm := instruction & 0x000000FF
-	out := bits.RotateLeft32(imm, -int(rotate*2))
-
-	// fmt.Printf("Not calculating carry bit for now\n")
-
-	return out, carry
-}
-
+//nolint:golint,unparam
 func unshiftRegister(instruction uint32, cpu interfaces.CPU) (uint32, bool) {
 	carry := false
 	// Shift is bits 11-4
@@ -312,7 +284,7 @@ func unshiftRegister(instruction uint32, cpu interfaces.CPU) (uint32, bool) {
 	// RM is bits 3-0
 	rm := uint8(instruction & 0x0000000F)
 
-	shiftAmount := uint32(0)
+	var shiftAmount uint32
 	// fmt.Printf("Not calculating carry bit for now\n")
 
 	if shift&0b0000_1001 == 1 {

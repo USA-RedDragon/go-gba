@@ -35,7 +35,10 @@ func (p PUSH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	// Push the registers
 	for _, reg := range pushRegisters {
 		cpu.WriteSP(cpu.ReadSP() - 4)
-		cpu.GetMMIO().Write32(cpu.ReadSP(), cpu.ReadRegister(reg))
+		err := cpu.GetMMIO().Write32(cpu.ReadSP(), cpu.ReadRegister(reg))
+		if err != nil {
+			panic(err)
+		}
 		fmt.Printf("Pushing register r%d @ %08X\n", reg, cpu.ReadSP())
 	}
 	return

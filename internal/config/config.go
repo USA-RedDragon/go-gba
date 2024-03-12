@@ -82,10 +82,12 @@ func GetConfig(cmd *cobra.Command) *Config {
 			currentConfig.Interactive = interactive
 			if interactive {
 				currentConfig.Debug = true
-				cmd.Flags().Set("cpu-only", "true")
+				err := cmd.Flags().Set("cpu-only", "true")
+				if err != nil {
+					fmt.Println("Error setting cpu-only flag")
+				}
 			}
 		}
-
 	}
 
 	fmt.Println(currentConfig.ToString())

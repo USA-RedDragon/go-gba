@@ -124,16 +124,18 @@ func (a ADD2) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	rsVal := cpu.ReadRegister(rs)
 
-	uint64Val := uint64(0)
+	var uint64Val uint64
 
 	// bit 10 == 1 means the operand is an immediate value
 	if a.instruction&(1<<10)>>10 == 1 {
+		//nolint:golint,dupword
 		fmt.Printf("ADD2 r%d, r%d, #%d\n", rd, rs, imm)
 		cpu.WriteRegister(rd, rsVal+uint32(imm))
 
 		// Set the C flag if the addition overflowed
 		uint64Val = uint64(rsVal) + uint64(imm)
 	} else {
+		//nolint:golint,dupword
 		fmt.Printf("ADD2 r%d, r%d, r%d\n", rd, rs, imm)
 		immVal := cpu.ReadRegister(imm)
 		cpu.WriteRegister(rd, rsVal+immVal)
@@ -175,8 +177,10 @@ func (s SUB2) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	// bit 10 == 1 means the operand is an immediate value
 	if s.instruction&(1<<10)>>10 == 1 {
+		//nolint:golint,dupword
 		fmt.Printf("SUB2 r%d, r%d, #%d\n", rd, rs, imm)
 	} else {
+		//nolint:golint,dupword
 		fmt.Printf("SUB2 r%d, r%d, r%d\n", rd, rs, imm)
 		imm = cpu.ReadRegister(uint8(imm))
 	}

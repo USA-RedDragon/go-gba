@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"image"
 
-	"golang.org/x/image/draw"
-
 	"github.com/USA-RedDragon/go-gba/internal/config"
 	"github.com/USA-RedDragon/go-gba/internal/emulator/memory"
+	"golang.org/x/image/draw"
 )
 
 const (
@@ -17,7 +16,7 @@ const (
 	OAMSize = 1 * 1024
 	// PaletteRAMSize is 1KB
 	PaletteRAMSize = 1 * 1024
-	NUM_PIXELS     = 240 * 160
+	NumPixels      = 240 * 160
 )
 
 type PPU struct {
@@ -199,18 +198,18 @@ func (p *PPU) Step() {
 	p.cycle++
 
 	if newlyHBlank {
-		p.ioRAM[0x04] = p.ioRAM[0x04] | 0x2
+		p.ioRAM[0x04] |= 0x2
 	}
 
 	if newlyNotHBlank {
-		p.ioRAM[0x04] = p.ioRAM[0x04] & 0xFD
+		p.ioRAM[0x04] &= 0xFD
 	}
 
 	if newlyVBlank {
-		p.ioRAM[0x04] = p.ioRAM[0x04] | 0x1
+		p.ioRAM[0x04] |= 0x1
 	}
 
 	if newlyNotVBlank {
-		p.ioRAM[0x04] = p.ioRAM[0x04] & 0xFE
+		p.ioRAM[0x04] &= 0xFE
 	}
 }

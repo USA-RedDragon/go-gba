@@ -12,6 +12,7 @@ import (
 	"github.com/USA-RedDragon/go-gba/internal/emulator/ppu"
 )
 
+//nolint:golint,revive
 const (
 	// BIOSROMSize is 16KB
 	BIOSROMSize = 16 * 1024
@@ -29,6 +30,7 @@ const (
 	CPSR_REG       = 16
 )
 
+//nolint:golint,revive
 type ARM7TDMI struct {
 	// Registers R0-R16
 	r [17]uint32
@@ -129,7 +131,7 @@ func (c *ARM7TDMI) DebugRegisters() string {
 	ret += fmt.Sprintf(" R0: 0x%08X\t R1: 0x%08X\t R2: 0x%08X\t  R3: 0x%08X\n", c.ReadRegister(0), c.ReadRegister(1), c.ReadRegister(2), c.ReadRegister(3))
 	ret += fmt.Sprintf(" R4: 0x%08X\t R5: 0x%08X\t R6: 0x%08X\t  R7: 0x%08X\n", c.ReadRegister(4), c.ReadRegister(5), c.ReadRegister(6), c.ReadRegister(7))
 	if c.GetThumbMode() {
-		ret += fmt.Sprintf(" R8: 0x%08X\t R9: 0x%08X\tR10: 0x%08X\t R11: 0x%08X\n", c.ReadHighRegister(8-8), c.ReadHighRegister(9-8), c.ReadHighRegister(10-8), c.ReadHighRegister(11-8))
+		ret += fmt.Sprintf(" R8: 0x%08X\t R9: 0x%08X\tR10: 0x%08X\t R11: 0x%08X\n", c.ReadHighRegister(0), c.ReadHighRegister(9-8), c.ReadHighRegister(10-8), c.ReadHighRegister(11-8))
 		ret += fmt.Sprintf("R12: 0x%08X\t SP: 0x%08X\t LR: 0x%08X\t  PC: 0x%08X\n", c.ReadHighRegister(12-8), c.ReadHighRegister(13-8), c.ReadHighRegister(14-8), c.ReadHighRegister(15-8))
 	} else {
 		ret += fmt.Sprintf(" R8: 0x%08X\t R9: 0x%08X\tR10: 0x%08X\t R11: 0x%08X\n", c.ReadRegister(8), c.ReadRegister(9), c.ReadRegister(10), c.ReadRegister(11))
@@ -405,119 +407,122 @@ func (c *ARM7TDMI) WriteHighRegister(reg uint8, value uint32) {
 	default:
 		panic("Unknown CPU mode")
 	}
-
 }
 
+//nolint:golint,gocyclo
 func (c *ARM7TDMI) ReadRegister(reg uint8) uint32 {
 	if c.GetThumbMode() {
 		if reg > 7 && reg != PC_REG && reg != LR_REG && reg != SP_REG && reg != CPSR_REG {
 			panic(fmt.Sprintf("Invalid register number %d", reg))
 		}
-		if reg == PC_REG {
+		switch reg {
+		case PC_REG:
 			return c.ReadPC()
-		} else if reg == LR_REG {
+		case LR_REG:
 			return c.ReadLR()
-		} else if reg == SP_REG {
+		case SP_REG:
 			return c.ReadSP()
-		} else if reg == CPSR_REG {
+		case CPSR_REG:
 			return c.ReadCPSR()
 		}
 		return c.r[reg]
-	} else {
-		if reg > 16 {
-			panic(fmt.Sprintf("Invalid register number %d", reg))
-		}
-		switch cpuMode(c.r[CPSR_REG] & 0x1F) {
-		case systemMode:
-			return c.r[reg]
-		case userMode:
-			return c.r[reg]
-		case fiqMode:
-			switch reg {
-			case 8:
-				return c.r8_fiq
-			case 9:
-				return c.r9_fiq
-			case 10:
-				return c.r10_fiq
-			case 11:
-				return c.r11_fiq
-			case 12:
-				return c.r12_fiq
-			case 13:
-				return c.sp_fiq
-			case 14:
-				return c.lr_fiq
-			default:
-				return c.r[reg]
-			}
-		case irqMode:
-			switch reg {
-			case 13:
-				return c.sp_irq
-			case 14:
-				return c.lr_irq
-			default:
-				return c.r[reg]
-			}
-		case supervisorMode:
-			switch reg {
-			case 13:
-				return c.sp_svc
-			case 14:
-				return c.lr_svc
-			default:
-				return c.r[reg]
-			}
-		case abortMode:
-			switch reg {
-			case 13:
-				return c.sp_abt
-			case 14:
-				return c.lr_abt
-			default:
-				return c.r[reg]
-			}
-		case undefinedMode:
-			switch reg {
-			case 13:
-				return c.sp_und
-			case 14:
-				return c.lr_und
-			default:
-				return c.r[reg]
-			}
+	}
+	if reg > 16 {
+		panic(fmt.Sprintf("Invalid register number %d", reg))
+	}
+	switch cpuMode(c.r[CPSR_REG] & 0x1F) {
+	case systemMode:
+		return c.r[reg]
+	case userMode:
+		return c.r[reg]
+	case fiqMode:
+		switch reg {
+		case 8:
+			return c.r8_fiq
+		case 9:
+			return c.r9_fiq
+		case 10:
+			return c.r10_fiq
+		case 11:
+			return c.r11_fiq
+		case 12:
+			return c.r12_fiq
+		case 13:
+			return c.sp_fiq
+		case 14:
+			return c.lr_fiq
 		default:
-			panic("Unknown CPU mode")
+			return c.r[reg]
 		}
+	case irqMode:
+		switch reg {
+		case 13:
+			return c.sp_irq
+		case 14:
+			return c.lr_irq
+		default:
+			return c.r[reg]
+		}
+	case supervisorMode:
+		switch reg {
+		case 13:
+			return c.sp_svc
+		case 14:
+			return c.lr_svc
+		default:
+			return c.r[reg]
+		}
+	case abortMode:
+		switch reg {
+		case 13:
+			return c.sp_abt
+		case 14:
+			return c.lr_abt
+		default:
+			return c.r[reg]
+		}
+	case undefinedMode:
+		switch reg {
+		case 13:
+			return c.sp_und
+		case 14:
+			return c.lr_und
+		default:
+			return c.r[reg]
+		}
+	default:
+		panic("Unknown CPU mode")
 	}
 }
 
+//nolint:golint,gocyclo
 func (c *ARM7TDMI) WriteRegister(reg uint8, value uint32) {
 	if c.GetThumbMode() {
 		if reg > 7 && reg != PC_REG && reg != LR_REG && reg != SP_REG && reg != CPSR_REG {
 			panic(fmt.Sprintf("Invalid register number %d", reg))
 		}
-		if reg == PC_REG {
+		switch reg {
+		case PC_REG:
 			c.WritePC(value)
-		} else if reg == LR_REG {
+		case LR_REG:
 			c.WriteLR(value)
-		} else if reg == SP_REG {
+		case SP_REG:
 			c.WriteSP(value)
-		} else if reg == CPSR_REG {
+		case CPSR_REG:
 			c.WriteCPSR(value)
-		} else {
+		default:
 			c.r[reg] = value
 		}
 	} else {
 		if reg > 16 {
 			panic(fmt.Sprintf("Invalid register number %d", reg))
 		}
-		if reg == PC_REG {
+		switch reg {
+		case PC_REG:
 			c.WritePC(value)
-		} else if reg == LR_REG {
+		case LR_REG:
 			c.WriteLR(value)
-		} else {
+		default:
 			switch cpuMode(c.r[CPSR_REG] & 0x1F) {
 			case systemMode:
 				c.r[reg] = value
@@ -786,6 +791,7 @@ func (c *ARM7TDMI) fetchThumb() uint16 {
 	return instruction
 }
 
+//nolint:golint,gocyclo
 func (c *ARM7TDMI) stepARM() {
 	// FETCH
 	instruction := c.fetchARM()
@@ -796,7 +802,7 @@ func (c *ARM7TDMI) stepARM() {
 	}
 
 	// DECODE
-	var condition uint32 = instruction >> 28
+	var condition = instruction >> 28
 	conditionFailed := false
 	// c.r[CSPR_REG] has condition flags N Z C V at bits 31-28
 	// c.r[CSPR_REG] has control bits I F T at bits 7-5
@@ -1051,11 +1057,7 @@ func (c *ARM7TDMI) SetThumbMode(value bool) {
 }
 
 func (c *ARM7TDMI) GetThumbMode() bool {
-	if c.r[CPSR_REG]&(1<<5)>>5 == 0 {
-		return false
-	} else {
-		return true
-	}
+	return c.r[CPSR_REG]&(1<<5)>>5 != 0
 }
 
 // InteractiveRun runs the CPU one instruction at a time, waiting for user input

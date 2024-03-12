@@ -38,8 +38,8 @@ type LDRR struct {
 }
 
 func (l LDRR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
-	// Bit 10 is the B bit, which determines whether this is a byte or word
-	byte := l.instruction&(1<<10)>>10 == 1
+	// Bit 10 is the B bit, which determines whether this is a byt or word
+	byt := l.instruction&(1<<10)>>10 == 1
 
 	// Bits 8-6 are the offset register
 	offsetRegister := uint8(l.instruction & (1<<8 | 1<<7 | 1<<6) >> 6)
@@ -51,7 +51,7 @@ func (l LDRR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	destinationSourceRegister := uint8(l.instruction & (1<<2 | 1<<1 | 1<<0))
 
 	b := ""
-	if byte {
+	if byt {
 		b = "b"
 	}
 
@@ -62,7 +62,7 @@ func (l LDRR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 
 	address := base + offset
 
-	if byte {
+	if byt {
 		res, err := cpu.GetMMIO().Read8(address)
 		if err != nil {
 			panic(err)
@@ -73,7 +73,7 @@ func (l LDRR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		if err != nil {
 			panic(err)
 		}
-		cpu.WriteRegister(destinationSourceRegister, uint32(res))
+		cpu.WriteRegister(destinationSourceRegister, res)
 	}
 
 	return
@@ -84,8 +84,8 @@ type STRR struct {
 }
 
 func (s STRR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
-	// Bit 10 is the B bit, which determines whether this is a byte or word
-	byte := s.instruction&(1<<10)>>10 == 1
+	// Bit 10 is the B bit, which determines whether this is a byt or word
+	byt := s.instruction&(1<<10)>>10 == 1
 
 	// Bits 8-6 are the offset register
 	offsetRegister := s.instruction & (1<<8 | 1<<7 | 1<<6) >> 6
@@ -97,7 +97,7 @@ func (s STRR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	destinationSourceRegister := s.instruction & (1<<2 | 1<<1 | 1<<0)
 
 	b := ""
-	if byte {
+	if byt {
 		b = "b"
 	}
 
@@ -112,11 +112,11 @@ func (s STRR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	fmt.Printf("address=0x%08X\n", address)
 	write := cpu.ReadRegister(uint8(destinationSourceRegister))
 
-	if byte {
+	if byt {
 		write &= 0xFF
 	}
 
-	err := memory.Write32(uint32(address), write)
+	err := memory.Write32(address, write)
 	if err != nil {
 		panic(err)
 	}
@@ -203,7 +203,7 @@ func (l LDRH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		is %= 32
 		tmp0 := (val) >> (is)
 		tmp1 := (val) << (32 - (is))
-		cpu.WriteRegister(rd, uint32(tmp0|tmp1))
+		cpu.WriteRegister(rd, tmp0|tmp1)
 		return
 	}
 
@@ -354,7 +354,7 @@ func (l LDMIA) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	rbVal := cpu.ReadRegister(rb)
 
 	// Bits 7-0 are the register list
-	registerList := uint16(l.instruction & (1<<7 | 1<<6 | 1<<5 | 1<<4 | 1<<3 | 1<<2 | 1<<1 | 1<<0))
+	registerList := l.instruction & (1<<7 | 1<<6 | 1<<5 | 1<<4 | 1<<3 | 1<<2 | 1<<1 | 1<<0)
 
 	var popRegisters []uint8
 
@@ -383,7 +383,7 @@ func (l LDMIA) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 			panic(err)
 		}
 		cpu.WriteRegister(register, mem)
-		if uint8(register) != rb {
+		if register != rb {
 			address += 4
 			cpu.WriteRegister(rb, address)
 		}
@@ -402,7 +402,7 @@ func (s STMIA) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	rbVal := cpu.ReadRegister(rb)
 
 	// Bits 7-0 are the register list
-	registerList := uint16(s.instruction & (1<<7 | 1<<6 | 1<<5 | 1<<4 | 1<<3 | 1<<2 | 1<<1 | 1<<0))
+	registerList := s.instruction & (1<<7 | 1<<6 | 1<<5 | 1<<4 | 1<<3 | 1<<2 | 1<<1 | 1<<0)
 
 	var pushRegisters []uint8
 
@@ -431,7 +431,7 @@ func (s STMIA) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		if emptyRlist {
 			regVal += 2
 		}
-		if uint8(register) == rb {
+		if register == rb {
 			if cnt == 0 {
 				regVal = rbVal
 			} else {
@@ -520,7 +520,7 @@ func (l LDRNSH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		is %= 32
 		tmp0 := (val) >> (is)
 		tmp1 := (val) << (32 - (is))
-		cpu.WriteRegister(rd, uint32(tmp0|tmp1))
+		cpu.WriteRegister(rd, tmp0|tmp1)
 		return
 	}
 

@@ -61,6 +61,7 @@ func (e EOR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	res := rnVal ^ op2
 
 	if cpu.GetConfig().Debug {
+		//nolint:golint,dupword
 		fmt.Printf("eor r%d, r%d, %d = %08X\n", rd, rn, op2, res)
 	}
 

@@ -26,7 +26,7 @@ func (ldr LDR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		fmt.Printf("Immediate: %t, Pre: %t, Up: %t, Word: %t, Writeback: %t\n", immediate, pre, up, word, writeback)
 	}
 
-	offset := uint32(0)
+	var offset uint32
 	if immediate {
 		offset = ldr.instruction & 0xFFF
 	} else {
@@ -45,7 +45,7 @@ func (ldr LDR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		}
 	}
 
-	read := uint32(0)
+	var read uint32
 	if !word {
 		read8, err := memory.Read8(address)
 		if err != nil {
@@ -102,7 +102,7 @@ func (str STR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	if cpu.GetConfig().Debug {
 		fmt.Printf("Immediate: %t, Pre: %t, Up: %t, Word: %t, Writeback: %t\n", immediate, pre, up, word, writeback)
 	}
-	offset := uint32(0)
+	var offset uint32
 	if immediate {
 		offset = str.instruction & 0xFFF
 	} else {
@@ -127,11 +127,17 @@ func (str STR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	if !word {
 		// On a word boundary, bits 7-0 of the value in the register
 		// are moved to the bottom bits of the memory at address
-		memory.Write8(address, uint8(rdVal&0xFF))
+		err := memory.Write8(address, uint8(rdVal&0xFF))
+		if err != nil {
+			panic(err)
+		}
 	} else {
 		// On a word boundary plus one, bits 15-8 of the value in the register
 		// are moved to the bottom bits of the memory at address
-		memory.Write32(address, rdVal)
+		err := memory.Write32(address, rdVal)
+		if err != nil {
+			panic(err)
+		}
 	}
 	if pre {
 		if writeback {
@@ -255,14 +261,20 @@ func (stm STM) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		for rs := 0; rs < 16; rs++ {
 			if stm.instruction&(1<<rs)>>rs == 1 {
 				cpu.WriteRegister(rn, cpu.ReadRegister(rn)+4)
-				cpu.GetMMIO().Write32(cpu.ReadRegister(rn), cpu.ReadRegister(uint8(rs)))
+				err := cpu.GetMMIO().Write32(cpu.ReadRegister(rn), cpu.ReadRegister(uint8(rs)))
+				if err != nil {
+					panic(err)
+				}
 				n++
 			}
 		}
 	case !p && u: // IA
 		for rs := 0; rs < 16; rs++ {
 			if stm.instruction&(1<<rs)>>rs == 1 {
-				cpu.GetMMIO().Write32(cpu.ReadRegister(rn), cpu.ReadRegister(uint8(rs)))
+				err := cpu.GetMMIO().Write32(cpu.ReadRegister(rn), cpu.ReadRegister(uint8(rs)))
+				if err != nil {
+					panic(err)
+				}
 				cpu.WriteRegister(rn, cpu.ReadRegister(rn)+4)
 				n++
 			}
@@ -271,14 +283,20 @@ func (stm STM) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		for rs := 15; rs >= 0; rs-- {
 			if stm.instruction&(1<<rs)>>rs == 1 {
 				cpu.WriteRegister(rn, cpu.ReadRegister(rn)-4)
-				cpu.GetMMIO().Write32(cpu.ReadRegister(rn), cpu.ReadRegister(uint8(rs)))
+				err := cpu.GetMMIO().Write32(cpu.ReadRegister(rn), cpu.ReadRegister(uint8(rs)))
+				if err != nil {
+					panic(err)
+				}
 				n++
 			}
 		}
 	case !p && !u: // DA
 		for rs := 15; rs >= 0; rs-- {
 			if stm.instruction&(1<<rs)>>rs == 1 {
-				cpu.GetMMIO().Write32(cpu.ReadRegister(rn), cpu.ReadRegister(uint8(rs)))
+				err := cpu.GetMMIO().Write32(cpu.ReadRegister(rn), cpu.ReadRegister(uint8(rs)))
+				if err != nil {
+					panic(err)
+				}
 				cpu.WriteRegister(rn, cpu.ReadRegister(rn)-4)
 				n++
 			}
@@ -345,7 +363,7 @@ func (ldrsh LDRSH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) 
 	signedHalfword := int32(int16(halfword))
 
 	if address&1 == 1 {
-		val := int32(signedHalfword)
+		val := signedHalfword
 		// Right rotate the halfword by 8 bits
 		is := 8
 		is %= 32
@@ -500,7 +518,7 @@ func (ldrh LDRH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 		is %= 32
 		tmp0 := (val) >> (is)
 		tmp1 := (val) << (32 - (is))
-		cpu.WriteRegister(rd, uint32(tmp0|tmp1))
+		cpu.WriteRegister(rd, tmp0|tmp1)
 	} else {
 		cpu.WriteRegister(rd, uint32(halfword))
 	}
@@ -527,7 +545,7 @@ type STRSH struct {
 	instruction uint32
 }
 
-func (strsh STRSH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
+func (strsh STRSH) Execute(_ interfaces.CPU) (repipeline bool, cycles uint16) {
 	// // Bit 24 == 1 means pre-indexed addressing
 	// pre := strsh.instruction&(1<<24)>>24 == 1
 	// // Bit 23 == 1 means the offset is added to the base register (up)
@@ -553,7 +571,7 @@ type STRSB struct {
 	instruction uint32
 }
 
-func (strsb STRSB) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
+func (strsb STRSB) Execute(_ interfaces.CPU) (repipeline bool, cycles uint16) {
 	// // Bit 24 == 1 means pre-indexed addressing
 	// pre := strsb.instruction&(1<<24)>>24 == 1
 	// // Bit 23 == 1 means the offset is added to the base register (up)
@@ -618,7 +636,10 @@ func (strh STRH) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	}
 
 	// Store unsigned halfword
-	cpu.GetMMIO().Write16(address, uint16(cpu.ReadRegister(rd)))
+	err := cpu.GetMMIO().Write16(address, uint16(cpu.ReadRegister(rd)))
+	if err != nil {
+		panic(err)
+	}
 
 	if !pre {
 		if up {
@@ -636,7 +657,7 @@ type LDRSHRegisterOffset struct {
 	instruction uint32
 }
 
-func (ldrsh LDRSHRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
+func (ldrsh LDRSHRegisterOffset) Execute(_ interfaces.CPU) (repipeline bool, cycles uint16) {
 	panic("LDRSHRegisterOffset Not implemented")
 }
 
@@ -644,7 +665,7 @@ type LDRSBRegisterOffset struct {
 	instruction uint32
 }
 
-func (ldrsb LDRSBRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
+func (ldrsb LDRSBRegisterOffset) Execute(_ interfaces.CPU) (repipeline bool, cycles uint16) {
 	panic("LDRSBRegisterOffset Not implemented")
 }
 
@@ -712,7 +733,7 @@ type STRSHRegisterOffset struct {
 	instruction uint32
 }
 
-func (strsh STRSHRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
+func (strsh STRSHRegisterOffset) Execute(_ interfaces.CPU) (repipeline bool, cycles uint16) {
 	panic("STRSHRegisterOffset Not implemented")
 }
 
@@ -720,7 +741,7 @@ type STRSBRegisterOffset struct {
 	instruction uint32
 }
 
-func (strsb STRSBRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
+func (strsb STRSBRegisterOffset) Execute(_ interfaces.CPU) (repipeline bool, cycles uint16) {
 	panic("STRSBRegisterOffset Not implemented")
 }
 
@@ -764,7 +785,10 @@ func (strh STRHRegisterOffset) Execute(cpu interfaces.CPU) (repipeline bool, cyc
 	}
 
 	// Store unsigned halfword
-	cpu.GetMMIO().Write16(address, uint16(cpu.ReadRegister(rd)))
+	err := cpu.GetMMIO().Write16(address, uint16(cpu.ReadRegister(rd)))
+	if err != nil {
+		panic(err)
+	}
 
 	if !pre {
 		if up {

@@ -79,6 +79,7 @@ func (m *MGBAHarness) Wait() error {
 	return m.cmd.Wait()
 }
 
+//nolint:golint,unparam
 func (m *MGBAHarness) write(b []byte) (int, error) {
 	i, err := m.stdin.Write(b)
 	if err != nil {
@@ -104,6 +105,7 @@ func (m *MGBAHarness) parseRegisters() error {
 	// r12: 000002E4  r13: 03007E64  r14: 00000004  r15: 00001078
 	// cpsr: 2000005F [--C--F-]
 	// Cycle: 569256
+	//nolint:golint,dupword
 	// 00001074:  E2588001     subs r8, r8, #1
 	for i := 0; i < 7; i++ {
 		line, err := m.readLine()

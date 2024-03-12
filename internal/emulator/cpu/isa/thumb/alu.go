@@ -500,6 +500,7 @@ func (l LSLMoveShifted) Execute(cpu interfaces.CPU) (repipeline bool, cycles uin
 	// Bits 2-0 are the destination register
 	rd := uint8(l.instruction & (1<<2 | 1<<1 | 1<<0))
 
+	//nolint:golint,dupword
 	fmt.Printf("lsls r%d, r%d, #0x%X\n", rd, rs, offset)
 
 	// Shift the source register left by the offset and store the result in the destination register
@@ -538,6 +539,7 @@ func (l LSRMoveShifted) Execute(cpu interfaces.CPU) (repipeline bool, cycles uin
 	// Bits 2-0 are the destination register
 	rd := uint8(l.instruction & (1<<2 | 1<<1 | 1<<0))
 
+	//nolint:golint,dupword
 	fmt.Printf("lsrs r%d, r%d, #0x%X\n", rd, rs, offset)
 
 	res := rsVal >> offset
@@ -576,6 +578,7 @@ func (a ASRMoveShifted) Execute(cpu interfaces.CPU) (repipeline bool, cycles uin
 	// Bits 2-0 are the destination register
 	rd := uint8(a.instruction & (1<<2 | 1<<1 | 1<<0))
 
+	//nolint:golint,dupword
 	fmt.Printf("asrs r%d, r%d, #0x%X\n", rd, rs, offset)
 
 	msb := rsVal & 0x8000_0000

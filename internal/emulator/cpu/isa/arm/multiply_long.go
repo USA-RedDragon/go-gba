@@ -28,6 +28,7 @@ func (u UMULL) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	rm := uint8(u.instruction & 0xf)
 	rmVal := uint64(cpu.ReadRegister(rm))
 
+	//nolint:golint,dupword
 	fmt.Printf("umull r%d, r%d, r%d, r%d\n", rdLo, rdHi, rm, rs)
 
 	res := rsVal * rmVal
@@ -69,6 +70,7 @@ func (u UMLAL) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	rm := uint8(u.instruction & 0xf)
 	rmVal := uint64(cpu.ReadRegister(rm))
 
+	//nolint:golint,dupword
 	fmt.Printf("umlal r%d, r%d, r%d, r%d\n", rdLo, rdHi, rm, rs)
 
 	res := rsVal*rmVal + accVal
@@ -106,6 +108,7 @@ func (s SMULL) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	rm := uint8(s.instruction & 0xf)
 	rmVal := int32(cpu.ReadRegister(rm))
 
+	//nolint:golint,dupword
 	fmt.Printf("smull r%d, r%d, r%d, r%d\n", rdLo, rdHi, rm, rs)
 
 	var res int64 = int64(rsVal) * int64(rmVal)
@@ -148,6 +151,7 @@ func (s SMLAL) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	rm := uint8(s.instruction & 0xf)
 	rmVal := int32(cpu.ReadRegister(rm))
 
+	//nolint:golint,dupword
 	fmt.Printf("smlal r%d, r%d, r%d, r%d\n", rdLo, rdHi, rm, rs)
 
 	var res int64 = int64(rsVal)*int64(rmVal) + accVal

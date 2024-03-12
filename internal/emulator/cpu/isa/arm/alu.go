@@ -42,7 +42,7 @@ func ALUOp2(inst uint32, cpu interfaces.CPU) uint32 {
 
 	// immediate(op rd, imm)
 	op2 := inst & 0b1111_1111
-	is := uint32((inst>>8)&0b1111) * 2
+	is := ((inst >> 8) & 0b1111) * 2
 	carryMut := inst&(1<<20)>>20 == 1
 	fmt.Println("ALUOp2 immediate")
 	op2 = ROR(op2, is, carryMut, false, cpu)

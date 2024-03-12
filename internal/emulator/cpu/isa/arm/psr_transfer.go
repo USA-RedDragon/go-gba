@@ -40,7 +40,7 @@ func (m MSR) Execute(cpu interfaces.CPU) (repipeline bool, cycles uint16) {
 	}
 
 	mask &= secMask
-	psr := uint32(0)
+	var psr uint32
 	if m.instruction&(1<<25)>>25 == 1 {
 		// register Psr[field] = Imm
 		is, imm := ((m.instruction>>8)&0b1111)*2, m.instruction&0b1111_1111
