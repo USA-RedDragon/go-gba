@@ -3,7 +3,7 @@ module github.com/USA-RedDragon/go-gba
 go 1.22.1
 
 require (
-	github.com/hajimehoshi/ebiten/v2 v2.6.6
+	github.com/hajimehoshi/ebiten/v2 v2.6.7
 	github.com/spf13/cobra v1.8.0
 	golang.org/x/image v0.15.0
 )
