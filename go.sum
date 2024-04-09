@@ -25,6 +25,8 @@ github.com/hajimehoshi/ebiten/v2 v2.6.7 h1:rxlMxu487wZN/JteykmuGdO1qotOolL8vJDU8
 github.com/hajimehoshi/ebiten/v2 v2.6.7/go.mod h1:gKgQI26zfoSb6j5QbrEz2L6nuHMbAYwrsXa5qsGrQKo=
 github.com/hajimehoshi/ebiten/v2 v2.7.0 h1:qY9lQmiw2mF9vuElKajDR2tT2SwzmnPPS2W6/8WQv5o=
 github.com/hajimehoshi/ebiten/v2 v2.7.0/go.mod h1:1vjyPw+h3n30rfTOpIsbWRXSxZ0Oz1cYc6Tq/2DKoQg=
+github.com/hajimehoshi/ebiten/v2 v2.7.1 h1:v/t/IeQxd2eTtZ0QjJsUKL/fiGNeF64tYXjXbyJehzQ=
+github.com/hajimehoshi/ebiten/v2 v2.7.1/go.mod h1:1vjyPw+h3n30rfTOpIsbWRXSxZ0Oz1cYc6Tq/2DKoQg=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/jezek/xgb v1.1.0 h1:wnpxJzP1+rkbGclEkmwpVFQWpuE2PUGNUzP8SbfFobk=
