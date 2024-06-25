@@ -5,7 +5,7 @@ go 1.22.2
 require (
 	github.com/hajimehoshi/ebiten/v2 v2.7.3
 	github.com/spf13/cobra v1.8.0
-	golang.org/x/image v0.15.0
+	golang.org/x/image v0.18.0
 )
 
 require (
