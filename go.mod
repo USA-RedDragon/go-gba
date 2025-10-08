@@ -1,11 +1,11 @@
 module github.com/USA-RedDragon/go-gba
 
-go 1.22.2
+go 1.24.0
 
 require (
 	github.com/hajimehoshi/ebiten/v2 v2.7.3
 	github.com/spf13/cobra v1.8.0
-	golang.org/x/image v0.15.0
+	golang.org/x/image v0.32.0
 )
 
 require (
